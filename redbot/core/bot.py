@@ -199,7 +199,7 @@ class Red(
             if cli_flags.mentionable:
                 return when_mentioned_or(*prefixes)(bot, message)
             return prefixes
-
+        kwargs["case_insensitive"] = True
         if "command_prefix" not in kwargs:
             kwargs["command_prefix"] = prefix_manager
 
@@ -889,6 +889,7 @@ class Red(
             or perms.manage_guild
             or await self.is_owner(author)
             or await self.is_admin(author)
+            or await self.is_mod(author)
         )
         # guild-wide checks
         if surpass_ignore:
