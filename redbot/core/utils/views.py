@@ -148,22 +148,22 @@ class SimpleMenu(discord.ui.View):
 
         self.forward_button = _NavigateButton(
             discord.ButtonStyle.grey,
-            "\N{BLACK RIGHT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}",
+            "<:r_:1103780404500119552>",
             direction=1,
         )
         self.backward_button = _NavigateButton(
             discord.ButtonStyle.grey,
-            "\N{BLACK LEFT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}",
+            "<:l_:1103780363198808136>",
             direction=-1,
         )
         self.first_button = _NavigateButton(
             discord.ButtonStyle.grey,
-            "\N{BLACK LEFT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\N{VARIATION SELECTOR-16}",
+            "<:ll:1103780322518249512>",
             direction=0,
         )
         self.last_button = _NavigateButton(
             discord.ButtonStyle.grey,
-            "\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\N{VARIATION SELECTOR-16}",
+            "<:rr:1103780385151795371>",
             direction=self.source.get_max_pages(),
         )
         self.select_options = [
@@ -171,13 +171,15 @@ class SimpleMenu(discord.ui.View):
             for num, x in enumerate(pages)
         ]
         self.stop_button = _StopButton(
-            discord.ButtonStyle.red, "\N{HEAVY MULTIPLICATION X}\N{VARIATION SELECTOR-16}"
+            discord.ButtonStyle.red, "<:x_:1103780422174900274>"
         )
         self.select_menu = self._get_select_menu()
         self.add_item(self.stop_button)
         if self.source.is_paginating() and not self.use_select_only:
+            self.remove_item(self.stop_button)
             self.add_item(self.first_button)
             self.add_item(self.backward_button)
+            self.add_item(self.stop_button)
             self.add_item(self.forward_button)
             self.add_item(self.last_button)
         if self.use_select_menu and self.source.is_paginating():
