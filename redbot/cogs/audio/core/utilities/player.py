@@ -91,7 +91,7 @@ class PlayerUtilities(MixinMeta, metaclass=CompositeMetaClass):
         if member.id == ctx.guild.owner_id:
             return True
 
-        if dj_enabled and await self._has_dj_role(ctx, member):
+        if await self._has_dj_role(ctx, member):
             return True
 
         if await self.bot.is_owner(member):
