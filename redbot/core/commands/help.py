@@ -423,12 +423,7 @@ class RedHelpFormatter(HelpFormatterABC):
                     for name, command in sorted(subcommands.items())
                 )
                 for i, page in enumerate(pagify(subtext, page_length=500, shorten_by=0)):
-                    if i == 0:
-                        title = bold(underline(_("Subcommands:")), escape_formatting=False)
-                    else:
-                        title = bold(underline(_("Subcommands:")), escape_formatting=False) + _(
-                            " (continued)"
-                        )
+                    title = bold(underline(_("Subcommands:")), escape_formatting=False)
                     field = EmbedField(title, page, False)
                     emb["fields"].append(field)
 
@@ -601,12 +596,7 @@ class RedHelpFormatter(HelpFormatterABC):
                     for name, command in sorted(coms.items())
                 )
                 for i, page in enumerate(pagify(command_text, page_length=500, shorten_by=0)):
-                    if i == 0:
-                        title = underline(bold(_("Commands:")), escape_formatting=False)
-                    else:
-                        title = underline(bold(_("Commands:")), escape_formatting=False) + _(
-                            " (continued)"
-                        )
+                    title = underline(bold(_("Commands:")), escape_formatting=False)
                     field = EmbedField(title, page, False)
                     emb["fields"].append(field)
 
