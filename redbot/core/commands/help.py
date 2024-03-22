@@ -82,7 +82,7 @@ class HelpSettings:
 
     .. warning::
 
-        This class is provisional.
+        This class is `provisional <developer-guarantees-exclusions>`.
 
     """
 
@@ -190,7 +190,7 @@ class HelpFormatterABC(abc.ABC):
 
     .. warning::
 
-        This class is documented but provisional with expected changes.
+        This class is documented but `provisional <developer-guarantees-exclusions>` with expected changes.
 
         In the future, this class will receive changes to support
         invoking the help command without context.
@@ -846,23 +846,32 @@ class RedHelpFormatter(HelpFormatterABC):
         if help_settings.use_menus.value >= HelpMenuSetting.buttons.value:
             use_select = help_settings.use_menus.value == 3
             select_only = help_settings.use_menus.value == 4
-            await SimpleMenu(
+            menu = SimpleMenu(
                 pages,
                 timeout=help_settings.react_timeout,
                 use_select_menu=use_select,
                 use_select_only=select_only,
-            ).start(ctx)
+            )
+            # Send menu to DMs if max pages is 0
+            if help_settings.max_pages_in_guild == 0:
+                await menu.start_dm(ctx.author)
+            else:
+                await menu.start(ctx)
 
         elif (
             can_user_react_in(ctx.me, ctx.channel)
             and help_settings.use_menus is HelpMenuSetting.reactions
         ):
+            use_DMs = help_settings.max_pages_in_guild == 0
+            destination = ctx.author if use_DMs else ctx.channel
             # Specifically ensuring the menu's message is sent prior to returning
-            m = await (ctx.send(embed=pages[0]) if embed else ctx.send(pages[0]))
+            m = await (destination.send(embed=pages[0]) if embed else destination.send(pages[0]))
             c = menus.DEFAULT_CONTROLS if len(pages) > 1 else {"\N{CROSS MARK}": menus.close_menu}
             # Allow other things to happen during menu timeout/interaction.
             asyncio.create_task(
-                menus.menu(ctx, pages, c, message=m, timeout=help_settings.react_timeout)
+                menus.menu(
+                    ctx, pages, c, user=ctx.author, message=m, timeout=help_settings.react_timeout
+                )
             )
             # menu needs reactions added manually since we fed it a message
             menus.start_adding_reactions(m, c.keys())
