@@ -171,9 +171,7 @@ class SimpleMenu(discord.ui.View):
             discord.SelectOption(label=_("Page {num}").format(num=num + 1), value=num)
             for num, x in enumerate(pages)
         ]
-        self.stop_button = _StopButton(
-            discord.ButtonStyle.red, "<:x_:1103780422174900274>"
-        )
+        self.stop_button = _StopButton(discord.ButtonStyle.red, "<:x_:1103780422174900274>")
         self.select_menu = self._get_select_menu()
         self.add_item(self.stop_button)
         if self.source.is_paginating() and not self.use_select_only:
