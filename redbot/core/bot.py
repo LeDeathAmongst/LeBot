@@ -199,6 +199,7 @@ class Red(
             if cli_flags.mentionable:
                 return when_mentioned_or(*prefixes)(bot, message)
             return prefixes
+
         if "command_prefix" not in kwargs:
             kwargs["command_prefix"] = prefix_manager
 
