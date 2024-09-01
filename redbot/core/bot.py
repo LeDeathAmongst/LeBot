@@ -1,5 +1,4 @@
 from __future__ import annotations
-import aiohttp
 import asyncio
 import inspect
 import logging
@@ -9,10 +8,10 @@ import shutil
 import sys
 import contextlib
 import weakref
+import functools
 from collections import namedtuple, OrderedDict
 from datetime import datetime
 from importlib.machinery import ModuleSpec
-from importlib.util import module_from_spec
 from pathlib import Path
 from typing import (
     Optional,
@@ -38,7 +37,7 @@ import discord
 from discord.ext import commands as dpy_commands
 from discord.ext.commands import when_mentioned_or
 
-from . import Config, app_commands, bank, commands, _drivers, errors, i18n, modlog
+from . import Config, i18n, app_commands, commands, errors, _drivers, modlog, bank
 from ._cli import ExitCodes
 from ._cog_manager import CogManager, CogManagerUI
 from .core_commands import Core
@@ -53,11 +52,11 @@ from ._settings_caches import (
     DisabledCogCache,
     I18nManager,
 )
+from .utils.predicates import MessagePredicate
 from ._rpc import RPCMixin
 from .tree import RedTree
 from .utils import can_user_send_messages_in, common_filters, AsyncIter
 from .utils.chat_formatting import box, text_to_file
-from .utils.predicates import MessagePredicate
 from .utils._internal_utils import send_to_owners_with_prefix_replaced
 
 if TYPE_CHECKING:
@@ -72,7 +71,7 @@ SHARED_API_TOKENS = "SHARED_API_TOKENS"
 
 log = logging.getLogger("red")
 
-__all__ = ("Innova",)
+__all__ = ("Red",)
 
 NotMessage = namedtuple("NotMessage", "guild")
 
@@ -82,6 +81,8 @@ PreInvokeCoroutine = Callable[[commands.Context], Awaitable[Any]]
 T_BIC = TypeVar("T_BIC", bound=PreInvokeCoroutine)
 UserOrRole = Union[int, discord.Role, discord.Member, discord.User]
 
+_ = i18n.Translator("Core", __file__)
+
 
 def _is_submodule(parent, child):
     return parent == child or child.startswith(parent + ".")
@@ -90,47 +91,14 @@ def _is_submodule(parent, child):
 class _NoOwnerSet(RuntimeError):
     """Raised when there is no owner set for the instance that is trying to start."""
 
-class DynamicShardedBot(commands.GroupMixin, RPCMixin, dpy_commands.AutoShardedBot):
-    """Custom AutoShardedBot that dynamically manages shards."""
 
-    def __init__(self, *args, cli_flags=None, bot_dir: Path = Path.cwd(), **kwargs):
-
-        # Calculate the shard count dynamically
-        shard_count = kwargs.pop("shard_count", 3)  # Default to 1 if not provided
-        kwargs["shard_count"] = shard_count
-
-        super().__init__(*args, **kwargs)
-
-        # Add additional initialization if needed
-        self._permissions_hooks: List[commands.CheckPredicate] = []
-        self._red_ready = asyncio.Event()
-        self._red_before_invoke_objs: Set[PreInvokeCoroutine] = set()
-        self._deletion_requests: MutableMapping[int, asyncio.Lock] = weakref.WeakValueDictionary()
-
-    async def on_ready(self):
-        # Check if we need to adjust the shard count
-        await self.check_shard_count()
-
-    async def check_shard_count(self):
-        guild_count = len(self.guilds)
-        required_shard_count = max(1, (guild_count + 14) // 15)  # Ensure at least 1 shard
-
-        if required_shard_count != self.shard_count:
-            log.info(f"Adjusting shard count to {required_shard_count} due to {guild_count} guilds.")
-            await self.restart_bot(required_shard_count)
-
-    async def restart_bot(self, new_shard_count: int):
-        # Save the new shard count to a file or environment variable as needed
-        # For example, using an environment variable:
-        os.environ["DISCORD_SHARD_COUNT"] = str(new_shard_count)
-
-        # Restart the bot
-        self._shutdown_mode = ExitCodes.RESTART
-        await self.close()
-        sys.exit(ExitCodes.RESTART)
-
-
-class Red(DynamicShardedBot):
+# Order of inheritance here matters.
+# d.py autoshardedbot should be at the end
+# all of our mixins should happen before,
+# and must include a call to super().__init__ unless they do not provide an init
+class Red(
+    commands.GroupMixin, RPCMixin, dpy_commands.bot.AutoShardedBot
+):  # pylint: disable=no-member # barely spurious warning caused by shadowing
     """Our subclass of discord.ext.commands.AutoShardedBot"""
 
     def __init__(self, *args, cli_flags=None, bot_dir: Path = Path.cwd(), **kwargs):
@@ -140,7 +108,6 @@ class Red(DynamicShardedBot):
         self.rpc_enabled = cli_flags.rpc
         self.rpc_port = cli_flags.rpc_port
         self._last_exception = None
-        self.session: aiohttp.ClientSession = None
         self._config.register_global(
             token=None,
             prefix=[],
@@ -165,7 +132,7 @@ class Red(DynamicShardedBot):
             help__tagline="",
             help__use_tick=False,
             help__react_timeout=30,
-            description="Shiro Discord Bot",
+            description="Red V3",
             invite_public=False,
             invite_perm=0,
             invite_commands_scope=False,
@@ -180,7 +147,7 @@ class Red(DynamicShardedBot):
             schema_version=0,
             datarequests__allow_user_requests=True,
             datarequests__user_requests_are_strict=True,
-            use_buttons=True,
+            use_buttons=False,
             enabled_slash_commands={},
             enabled_user_commands={},
             enabled_message_commands={},
@@ -225,7 +192,7 @@ class Red(DynamicShardedBot):
         self._ignored_cache = IgnoreManager(self._config)
         self._whiteblacklist_cache = WhitelistBlacklistManager(self._config)
         self._i18n_cache = I18nManager(self._config)
-        self._bypass_cooldowns = True
+        self._bypass_cooldowns = False
 
         async def prefix_manager(bot, message) -> List[str]:
             prefixes = await self._prefix_cache.get_prefixes(message.guild)
@@ -271,7 +238,6 @@ class Red(DynamicShardedBot):
         self._main_dir = bot_dir
         self._cog_mgr = CogManager()
         self._use_team_features = cli_flags.use_team_features
-
         super().__init__(*args, help_command=None, tree_cls=RedTree, **kwargs)
         # Do not manually use the help formatter attribute here, see `send_help_for`,
         # for a documented API. The internals of this object are still subject to change.
@@ -926,6 +892,7 @@ class Red(DynamicShardedBot):
             or perms.manage_guild
             or await self.is_owner(author)
             or await self.is_admin(author)
+            or await self.is_mod(author)
         )
         # guild-wide checks
         if surpass_ignore:
@@ -1086,7 +1053,6 @@ class Red(DynamicShardedBot):
         discord.Member
             The user you requested.
         """
-
         if (member := guild.get_member(member_id)) is not None:
             return member
         return await guild.fetch_member(member_id)
@@ -1162,7 +1128,6 @@ class Red(DynamicShardedBot):
         """
         await super()._pre_login()
 
-        self.session = aiohttp.ClientSession()
         await self._maybe_update_config()
         self.description = await self._config.description()
         self._color = discord.Colour(await self._config.color())
@@ -1293,7 +1258,11 @@ class Red(DynamicShardedBot):
     def _setup_owners(self) -> None:
         if self.application.team:
             if self._use_team_features:
-                self.owner_ids.update(m.id for m in self.application.team.members)
+                self.owner_ids.update(
+                    m.id
+                    for m in self.application.team.members
+                    if m.role in (discord.TeamMemberRole.admin, discord.TeamMemberRole.developer)
+                )
         elif self._owner_id_overwrite is None:
             self.owner_ids.add(self.application.owner.id)
 
@@ -1465,8 +1434,10 @@ class Red(DynamicShardedBot):
         str
             Invite URL.
         """
-        scopes = ("bot", "applications.commands")
-        perms_int = await self._config.invite_perm()
+        data = await self._config.all()
+        commands_scope = data["invite_commands_scope"]
+        scopes = ("bot", "applications.commands") if commands_scope else ("bot",)
+        perms_int = data["invite_perm"]
         permissions = discord.Permissions(perms_int)
         return discord.utils.oauth_url(self.application_id, permissions=permissions, scopes=scopes)
 
@@ -1480,17 +1451,6 @@ class Red(DynamicShardedBot):
             :code:`True` if the invite URL is public.
         """
         return await self._config.invite_public()
-
-    async def get_install_url(self) -> str:
-        """
-        Generates the install URL for the bot.
-
-        Returns
-        -------
-        str
-            Install URL.
-        """
-        return f"https://discord.com/oauth2/authorize?client_id={self.application_id}"
 
     async def is_admin(self, member: discord.Member) -> bool:
         """Checks if a member is an admin of their guild."""
@@ -1722,22 +1682,15 @@ class Red(DynamicShardedBot):
         if name in self.extensions:
             raise errors.PackageAlreadyLoaded(spec)
 
-        lib = module_from_spec(spec)
-        sys.modules[spec.name] = lib
-        try:
-            spec.loader.exec_module(lib)
-        except Exception:
-            del sys.modules[spec.name]
-            raise
+        lib = spec.loader.load_module()
         if not hasattr(lib, "setup"):
             del lib
-            raise discord.ClientException(f"Extension {name} does not have a setup function.")
+            raise discord.ClientException(f"extension {name} does not have a setup function")
 
         try:
             await lib.setup(self)
             await self.tree.red_check_enabled()
-        except Exception:
-            del sys.modules[spec.name]
+        except Exception as e:
             await self._remove_module_references(lib.__name__)
             await self._call_module_finalizers(lib, name)
             raise
@@ -1781,7 +1734,9 @@ class Red(DynamicShardedBot):
     ) -> None:
         """
         Mark an application command as being enabled.
+
         Enabled commands are able to be added to the bot's tree, are able to be synced, and can be invoked.
+
         Raises
         ------
         CommandLimitReached
@@ -1811,6 +1766,7 @@ class Red(DynamicShardedBot):
     ) -> None:
         """
         Mark an application command as being disabled.
+
         Disabled commands are not added to the bot's tree, are not able to be synced, and cannot be invoked.
         """
         if command_type is discord.AppCommandType.chat_input:
@@ -1877,6 +1833,7 @@ class Red(DynamicShardedBot):
             ids_to_check.add(author.id)
 
         immune_ids = await self._config.guild(guild).autoimmune_ids()
+
         return not ids_to_check.isdisjoint(immune_ids)
 
     @staticmethod
@@ -1998,10 +1955,6 @@ class Red(DynamicShardedBot):
             for subcommand in command.walk_commands():
                 subcommand.requires.reset()
         return command
-
-    def readd_command(self, command: commands.Command, /) -> None:
-        self.remove_command(command.name)
-        self.add_command(command)
 
     def hybrid_command(
         self,
@@ -2140,7 +2093,7 @@ class Red(DynamicShardedBot):
         Union[discord.TextChannel, discord.VoiceChannel, discord.StageChannel, discord.User]
     ]:
         """
-        Gets the users and channels to send to.
+        Gets the users and channels to send to
         """
         await self.wait_until_red_ready()
         destinations = []
@@ -2224,7 +2177,6 @@ class Red(DynamicShardedBot):
     async def close(self):
         """Logs out of Discord and closes all connections."""
         await super().close()
-        await self.session.close()
         await _drivers.get_driver_class().teardown()
         try:
             if self.rpc_enabled:
@@ -2428,12 +2380,12 @@ class Red(DynamicShardedBot):
             n_remaining = len(messages) - idx
             if n_remaining > 0:
                 if n_remaining == 1:
-                    prompt_text = (
+                    prompt_text = _(
                         "There is still one message remaining. Type {command_1} to continue"
                         " or {command_2} to upload all contents as a file."
                     )
                 else:
-                    prompt_text = (
+                    prompt_text = _(
                         "There are still {count} messages remaining. Type {command_1} to continue"
                         " or {command_2} to upload all contents as a file."
                     )
@@ -2468,7 +2420,3 @@ class Red(DynamicShardedBot):
                         )
                         break
         return ret
-
-    async def get_support_server_url(self) -> Optional[str]:
-        """Get the support server URL for this bot."""
-        return await self._config.support_server()
