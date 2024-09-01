@@ -2384,9 +2384,9 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
             )
         )
 
-    @commands.command(name="shutdown")
+    @commands.command(name="shutdown", aliases=["die"])
     @commands.is_owner()
-    async def _shutdown(self, ctx: commands.Context, silently: bool = False):
+    async def _shutdown(self, ctx: commands.Context, directly: bool = False):
         """Shuts down the bot.
 
         Allows [botname] to shut down gracefully.
@@ -2395,21 +2395,34 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
 
         **Examples:**
         - `[p]shutdown`
-        - `[p]shutdown True` - Shutdowns silently.
+        - `[p]shutdown True` - Shutdowns directly.
 
         **Arguments:**
-        - `[silently]` - Whether to skip sending the shutdown message. Defaults to False.
+        - `[directly]` - Whether to shutdown directly without confirmation. Defaults to False.
         """
-        wave = "\N{WAVING HAND SIGN}"
-        skin = "\N{EMOJI MODIFIER FITZPATRICK TYPE-3}"
         with contextlib.suppress(discord.HTTPException):
-            if not silently:
-                await ctx.send(_("Shutting down... ") + wave + skin)
-        await ctx.bot.shutdown()
+            if directly:
+                embed = discord.Embed(title="Shutting Down in 3.. 2.. 1...", color=await ctx.embed_color())
+                await ctx.send(embed=embed)
+                await self.bot.shutdown()
+                return
+            embed = discord.Embed(
+                title="Are you sure you want to shut down? Click `yes` to shutdown, or `no` to cancel.", color=await ctx.embed_color()
+            )
+            view = ConfirmView(ctx.author, disable_buttons=True)
+            view.message = await ctx.send(embed=embed, view=view)
+            await view.wait()
+            if view.result:
+                embed = discord.Embed(title="Shutting Down in 3.. 2.. 1...", color=await ctx.embed_color())
+                await view.message.edit(embed=embed)
+                await self.bot.shutdown()
+            else:
+                embed = discord.Embed(title="Cancelling in 3.. 2.. 1...", color=await ctx.embed_color())
+                await view.message.edit(embed=embed)
 
-    @commands.command(name="restart")
+    @commands.command(name="restart", aliases=["undead"])
     @commands.is_owner()
-    async def _restart(self, ctx: commands.Context, silently: bool = False):
+    async def _restart(self, ctx: commands.Context, directly: bool = False):
         """Attempts to restart [botname].
 
         Makes [botname] quit with exit code 26.
@@ -2417,15 +2430,30 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
 
         **Examples:**
         - `[p]restart`
-        - `[p]restart True` - Restarts silently.
+        - `[p]restart True` - Restarts directly.
 
         **Arguments:**
-        - `[silently]` - Whether to skip sending the restart message. Defaults to False.
+        - `[directly]` - Whether to restart directly without confirmation. Defaults to False.
         """
         with contextlib.suppress(discord.HTTPException):
-            if not silently:
-                await ctx.send(_("Restarting..."))
-        await ctx.bot.shutdown(restart=True)
+            if directly:
+                embed = discord.Embed(title="Restart Incoming... 3.. 2.. 1...", color=await ctx.embed_color())
+                await ctx.send(embed=embed)
+                await self.bot.shutdown(restart=True)
+                return
+            embed = discord.Embed(
+                title="Are you sure you want to restart? Click `yes` to restart or `no` to cancel.", color=await ctx.embed_color()
+            )
+            view = ConfirmView(ctx.author, disable_buttons=True)
+            view.message = await ctx.send(embed=embed, view=view)
+            await view.wait()
+            if view.result:
+                embed = discord.Embed(title="Restart Incoming... 3.. 2.. 1...", color=await ctx.embed_color())
+                await view.message.edit(embed=embed)
+                await self.bot.shutdown(restart=True)
+            else:
+                embed = discord.Embed(title="Cancelling.. 3.. 2.. 1...", color=await ctx.embed_color())
+                await view.message.edit(embed=embed)
 
     @bank.is_owner_if_bank_global()
     @commands.guildowner_or_permissions(administrator=True)
