@@ -148,31 +148,34 @@ class SimpleMenu(discord.ui.View):
         self.use_select_menu = use_select_menu or use_select_only
         self.use_select_only = use_select_only
 
-        self.forward_button = _NavigateButton(
-            discord.ButtonStyle.grey,
-            "<:r_:1103780404500119552>",
-            direction=1,
-        )
-        self.backward_button = _NavigateButton(
-            discord.ButtonStyle.grey,
-            "<:l_:1103780363198808136>",
-            direction=-1,
+        self.stop_button = _StopButton(
+            discord.ButtonStyle.red,
+            discord.PartialEmoji(name="Cross", animated=True, id=984377347958538262),
         )
         self.first_button = _NavigateButton(
-            discord.ButtonStyle.grey,
-            "<:ll:1103780322518249512>",
+            discord.ButtonStyle.gray,
+            discord.PartialEmoji(name="First", animated=True, id=984377537855623178),
             direction=0,
         )
+        self.backward_button = _NavigateButton(
+            discord.ButtonStyle.gray,
+            discord.PartialEmoji(name="Left", animated=True, id=984377515999109190),
+            direction=-1,
+        )
+        self.forward_button = _NavigateButton(
+            discord.ButtonStyle.gray,
+            discord.PartialEmoji(name="Right", animated=True, id=984377456301596692),
+            direction=1,
+        )
         self.last_button = _NavigateButton(
-            discord.ButtonStyle.grey,
-            "<:rr:1103780385151795371>",
+            discord.ButtonStyle.gray,
+            discord.PartialEmoji(name="Last", animated=True, id=984377411749707796),
             direction=self.source.get_max_pages(),
         )
         self.select_options = [
             discord.SelectOption(label=_("Page {num}").format(num=num + 1), value=num)
             for num, x in enumerate(pages)
         ]
-        self.stop_button = _StopButton(discord.ButtonStyle.red, "<:x_:1103780422174900274>")
         self.select_menu = self._get_select_menu()
         self.add_item(self.stop_button)
         if self.source.is_paginating() and not self.use_select_only:
