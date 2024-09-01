@@ -112,9 +112,7 @@ class DynamicShardedBot(commands.GroupMixin, RPCMixin, dpy_commands.AutoShardedB
 # d.py autoshardedbot should be at the end
 # all of our mixins should happen before,
 # and must include a call to super().__init__ unless they do not provide an init
-class Red(
-    commands.GroupMixin, RPCMixin, DynamicShardedBot, dpy_commands.bot.AutoShardedBot
-):  # pylint: disable=no-member # barely spurious warning caused by shadowing
+class Red(DynamicShardedBot):  # pylint: disable=no-member # barely spurious warning caused by shadowing
     """Our subclass of discord.ext.commands.AutoShardedBot"""
 
     def __init__(self, *args, cli_flags=None, bot_dir: Path = Path.cwd(), **kwargs):
