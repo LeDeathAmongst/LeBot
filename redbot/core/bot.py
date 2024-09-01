@@ -91,13 +91,12 @@ def _is_submodule(parent, child):
 class _NoOwnerSet(RuntimeError):
     """Raised when there is no owner set for the instance that is trying to start."""
 
-class DynamicShardedBot(commands.GroupMixin, RPCMixin, dpy_commands.AutoShardedBot):
+class DynamicShardedBot(dpy_commands.AutoShardedBot, commands.GroupMixin, RPCMixin):
     """Custom AutoShardedBot that dynamically manages shards."""
 
     def __init__(self, *args, cli_flags=None, bot_dir: Path = Path.cwd(), **kwargs):
-
         # Calculate the shard count dynamically
-        shard_count = kwargs.pop("shard_count", 3)  # Default to 1 if not provided
+        shard_count = kwargs.pop("shard_count", 3)  # Default to 3 if not provided
         kwargs["shard_count"] = shard_count
 
         super().__init__(*args, **kwargs)
