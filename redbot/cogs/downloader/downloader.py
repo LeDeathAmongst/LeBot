@@ -14,7 +14,7 @@ from redbot.core.bot import Red
 from redbot.core.data_manager import cog_data_path
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils import can_user_react_in
-from redbot.core.utils.chat_formatting import box, pagify, humanize_list, inline
+from redbot.core.utils.chat_formatting import *
 from redbot.core.utils.menus import start_adding_reactions
 from redbot.core.utils.predicates import MessagePredicate, ReactionPredicate
 
@@ -1477,9 +1477,9 @@ class Downloader(commands.Cog):
 
         if unavailable_cogs:
             message = (
-                _("\nCouldn't find these cogs in {repo.name}: ")
+                error(_("\nCouldn't find these cogs in {repo.name}: "))
                 if len(unavailable_cogs) > 1
-                else _("\nCouldn't find this cog in {repo.name}: ")
+                else error(_("\nCouldn't find this cog in {repo.name}: "))
             ).format(repo=repo) + humanize_list(unavailable_cogs)
         if already_installed:
             message += (
@@ -1489,9 +1489,9 @@ class Downloader(commands.Cog):
             ) + humanize_list(already_installed)
         if name_already_used:
             message += (
-                _("\nSome cogs with these names are already installed from different repos: ")
+                warning(_("\nSome cogs with these names are already installed from different repos: "))
                 if len(name_already_used) > 1
-                else _("\nCog with this name is already installed from a different repo: ")
+                else warning(_("\nCog with this name is already installed from a different repo: "))
             ) + humanize_list(name_already_used)
         correct_cogs, add_to_message = self._filter_incorrect_cogs(cogs)
         if add_to_message:
@@ -1521,7 +1521,7 @@ class Downloader(commands.Cog):
             ):
                 outdated_bot_version.append(
                     inline(cog.name)
-                    + _(" (Minimum: {min_version}").format(min_version=cog.min_bot_version)
+                    + info(_(" (Minimum: {min_version}").format(min_version=cog.min_bot_version))
                     + (
                         ""
                         if ignore_max
@@ -1534,9 +1534,9 @@ class Downloader(commands.Cog):
         message = ""
         if outdated_python_version:
             message += (
-                _("\nThese cogs require higher python version than you have: ")
+                warning(_("\nThese cogs require higher python version than you have: "))
                 if len(outdated_python_version)
-                else _("\nThis cog requires higher python version than you have: ")
+                else warning(_("\nThis cog requires higher python version than you have: "))
             ) + humanize_list(outdated_python_version)
         if outdated_bot_version:
             message += (
@@ -1616,7 +1616,7 @@ class Downloader(commands.Cog):
         installed_cogs, failed_cogs = await self._install_cogs(cogs_to_update)
         installed_libs, failed_libs = await self._reinstall_libraries(libs_to_update)
         await self._save_to_installed(installed_cogs + installed_libs)
-        message = _("Cog update completed successfully.")
+        message = success(_("Cog update completed successfully."))
 
         updated_cognames: Set[str] = set()
         if installed_cogs:
@@ -1627,11 +1627,11 @@ class Downloader(commands.Cog):
                 current_eud_statement = current_cog_versions_map[cog.name].end_user_data_statement
                 if current_eud_statement != cog.end_user_data_statement:
                     cogs_with_changed_eud_statement.add(cog.name)
-            message += _("\nUpdated: ") + humanize_list(tuple(map(inline, updated_cognames)))
+            message += info(_("\nUpdated: ")) + humanize_list(tuple(map(inline, updated_cognames)))
             if cogs_with_changed_eud_statement:
                 if len(cogs_with_changed_eud_statement) > 1:
                     message += (
-                        _("\nEnd user data statements of these cogs have changed: ")
+                        info(_("\nEnd user data statements of these cogs have changed: "))
                         + humanize_list(tuple(map(inline, cogs_with_changed_eud_statement)))
                         + _("\nYou can use {command} to see the updated statements.\n").format(
                             command=inline(f"{ctx.clean_prefix}cog info <repo> <cog>")
@@ -1648,15 +1648,15 @@ class Downloader(commands.Cog):
             # If the bot has any slash commands enabled, warn them to sync
             enabled_slash = await self.bot.list_enabled_app_commands()
             if any(enabled_slash.values()):
-                message += _(
+                message += info(_(
                     "\nYou may need to resync your slash commands with `{prefix}slash sync`."
-                ).format(prefix=ctx.prefix)
+                ).format(prefix=ctx.prefix))
         if failed_cogs:
             cognames = [cog.name for cog in failed_cogs]
             message += (
-                _("\nFailed to update cogs: ")
+                error(_("\nFailed to update cogs: "))
                 if len(failed_cogs) > 1
-                else _("\nFailed to update cog: ")
+                else error(_("\nFailed to update cog: "))
             ) + humanize_list(tuple(map(inline, cognames)))
         if not cogs_to_update:
             message = _("No cogs were updated.")
@@ -1684,14 +1684,14 @@ class Downloader(commands.Cog):
     async def _ask_for_cog_reload(self, ctx: commands.Context, updated_cognames: Set[str]) -> None:
         updated_cognames &= ctx.bot.extensions.keys()  # only reload loaded cogs
         if not updated_cognames:
-            await ctx.send(_("None of the updated cogs were previously loaded. Update complete."))
+            await ctx.send(success(_("None of the updated cogs were previously loaded. Update complete.")))
             return
 
         if not ctx.assume_yes:
             message = (
-                _("Would you like to reload the updated cogs?")
+                question(_("Would you like to reload the updated cogs?"))
                 if len(updated_cognames) > 1
-                else _("Would you like to reload the updated cog?")
+                else question(_("Would you like to reload the updated cog?"))
             )
             can_react = can_user_react_in(ctx.me, ctx.channel)
             if not can_react:
@@ -1761,7 +1761,7 @@ class Downloader(commands.Cog):
         command = ctx.bot.all_commands.get(command_name)
 
         if command is None:
-            await ctx.send(_("That command doesn't seem to exist."))
+            await ctx.send(error(_("That command doesn't seem to exist.")))
             return
 
         # Check if in installed cogs
