@@ -91,13 +91,29 @@ def _is_submodule(parent, child):
 class _NoOwnerSet(RuntimeError):
     """Raised when there is no owner set for the instance that is trying to start."""
 
+class DynamicShardedBot(commands.GroupMixin, RPCMixin, dpy_commands.AutoShardedBot):
+    """Custom AutoShardedBot that dynamically manages shards."""
+
+    def __init__(self, *args, cli_flags=None, bot_dir: Path = Path.cwd(), **kwargs):
+
+        # Calculate the shard count dynamically
+        shard_count = kwargs.pop("shard_count", 3)  # Default to 1 if not provided
+        kwargs["shard_count"] = shard_count
+
+        super().__init__(*args, **kwargs)
+
+        # Add additional initialization if needed
+        self._permissions_hooks: List[commands.CheckPredicate] = []
+        self._red_ready = asyncio.Event()
+        self._red_before_invoke_objs: Set[PreInvokeCoroutine] = set()
+        self._deletion_requests: MutableMapping[int, asyncio.Lock] = weakref.WeakValueDictionary()
 
 # Order of inheritance here matters.
 # d.py autoshardedbot should be at the end
 # all of our mixins should happen before,
 # and must include a call to super().__init__ unless they do not provide an init
 class Red(
-    commands.GroupMixin, RPCMixin, dpy_commands.bot.AutoShardedBot
+    commands.GroupMixin, RPCMixin, DynamicShardedBot, dpy_commands.bot.AutoShardedBot
 ):  # pylint: disable=no-member # barely spurious warning caused by shadowing
     """Our subclass of discord.ext.commands.AutoShardedBot"""
 
