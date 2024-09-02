@@ -22,11 +22,14 @@ __all__ = (
     "question",
     "bold",
     "box",
+    "header",
+    "hyperlink",
     "inline",
     "italics",
     "spoiler",
     "pagify",
     "strikethrough",
+    "subtext",
     "underline",
     "quote",
     "escape",
@@ -55,6 +58,59 @@ def success(text: str) -> str:
 
     """
     return f"<a:Tick:1279795666507272225> {text}"
+
+def hyperlink(text: str, url: str) -> str:
+    """Create hyperlink markdown with text and a URL.
+    Parameters
+    ----------
+    text : str
+        The text which will contain the link.
+    url : str
+        The URL used for the hyperlink.
+    Returns
+    -------
+    str
+        The new message.
+    """
+    return f"[{text}]({url})"
+
+
+def header(text: str, size: Literal["small", "medium", "large"]) -> str:
+    """Formats a header.
+    Parameters
+    ----------
+    text : str
+        The text for the header.
+    url : Literal['small', 'medium', 'large']
+        The size of the header ('small', 'medium' or 'large')
+    Returns
+    -------
+    str
+        The new message.
+    """
+    if size == "small":
+        multiplier = 3
+    elif size == "medium":
+        multiplier = 2
+    elif size == "large":
+        multiplier = 1
+    else:
+        raise ValueError(f"Invalid size '{size}'")
+    return "#" * multiplier + " " + text
+
+
+def subtext(text: str) -> str:
+    """Formats subtext from the given text.
+    Parameters
+    ----------
+    text : str
+        The text to format as subtext.
+    Returns
+    -------
+    str
+        The new message.
+    """
+    return "-# " + text
 
 
 def error(text: str) -> str:
