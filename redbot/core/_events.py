@@ -92,14 +92,8 @@ def init_events(bot, cli_flags):
         red_creator = "Cog-Creators"
         host_company = "Shadow ~ Hosting"
 
-        # Fetch owner IDs from the bot instance
-        owner_ids = bot.owner_ids
-
-        # Retrieve the owner(s) as user objects
-        owners = [bot.get_user(owner_id) for owner_id in owner_ids]
-
-        # Format the owner names into a single string
-        owner_names = ", ".join(owner.name for owner in owners if owner is not None)
+        app_info = await bot.application_info()
+        owner_name = app_info.owner.name
 
         table_general_info = Table(show_edge=False, show_header=False, box=box.MINIMAL)
         table_general_info.add_row("Prefixes", ", ".join(prefixes))
