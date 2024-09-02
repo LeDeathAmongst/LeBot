@@ -61,23 +61,6 @@ def rainbow_gradient(text: str) -> Text:
         gradient_text.append(char, style=colors[i % len(colors)])
     return gradient_text
 
-def get_bot_info(bot, prefixes, lang, dpy_version, py_version, owner_name):
-    table_general_info = Table(show_edge=False, show_header=False, box=box.MINIMAL)
-    table_general_info.add_row("Prefixes", ", ".join(prefixes))
-    table_general_info.add_row("Bot Version", red_version)
-    table_general_info.add_row("Discord.py Version", dpy_version)
-    table_general_info.add_row("Python Version", py_version)
-    table_general_info.add_row("Owner:", owner_name)
-    return table_bot_info
-
-def get_cluster_info(cluster_id, shards, servers, users):
-    table_cluster_info = Table(show_edge=False, show_header=False, box=box.MINIMAL)
-    table_cluster_info.add_row("Cluster ID", str(cluster_id))
-    table_cluster_info.add_row("Shards", str(shards))
-    table_cluster_info.add_row("Servers", str(servers))
-    table_cluster_info.add_row("Unique Users", str(users))
-    return table_cluster_info
-
 def init_events(bot, cli_flags):
     @bot.event
     async def on_connect():
@@ -106,6 +89,8 @@ def init_events(bot, cli_flags):
         prefixes = cli_flags.prefix or (await bot._config.prefix())
         lang = await bot._config.locale()
         dpy_version = discord.__version__
+        red_creator = "Cog-Creators"
+        host_company = "Shadow ~ Hosting"
 
         table_general_info = Table(show_edge=False, show_header=False, box=box.MINIMAL)
         table_general_info.add_row("Prefixes", ", ".join(prefixes))
@@ -114,6 +99,12 @@ def init_events(bot, cli_flags):
         table_general_info.add_row("Discord.py version", dpy_version)
         table_general_info.add_row("Storage type", data_manager.storage_type())
 
+        table_bot_info = Table(show_edge=False, show_header=False, box=box.MINIMAL)
+        table_bot_info.add_row("Owner", owner_name)
+        table_bot_info.add_row("Developer", owner_name)
+        table_bot_info.add_row("Created By", cog_creators)
+        table_bot_info.add_row("Hosted On", host_company)
+        
         table_counts = Table(show_edge=False, show_header=False, box=box.MINIMAL)
         # String conversion is needed as Rich doesn't deal with ints
         table_counts.add_row("Shards", str(bot.shard_count))
@@ -135,7 +126,7 @@ def init_events(bot, cli_flags):
         if guilds:
             rich_console.print(
                 Columns(
-                    [Panel(table_general_info, title=bot.user.display_name), Panel(table_counts), Panel(table_bot_info), Panel(table_cluster_info)],
+                    [Panel(table_general_info, title=bot.user.display_name), Panel(table_counts), Panel(table_bot_info, title=bot.user.display_name)],
                     equal=True,
                     align="center",
                 )
