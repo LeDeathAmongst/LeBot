@@ -91,9 +91,15 @@ def init_events(bot, cli_flags):
         dpy_version = discord.__version__
         red_creator = "Cog-Creators"
         host_company = "Shadow ~ Hosting"
+
+        # Fetch owner IDs from the bot instance
         owner_ids = bot.owner_ids
+
+        # Retrieve the owner(s) as user objects
         owners = [bot.get_user(owner_id) for owner_id in owner_ids]
-        owner_name = [owner.name for owner in owners if owner is not None]
+
+        # Format the owner names into a single string
+        owner_names = ", ".join(owner.name for owner in owners if owner is not None)
 
         table_general_info = Table(show_edge=False, show_header=False, box=box.MINIMAL)
         table_general_info.add_row("Prefixes", ", ".join(prefixes))
@@ -103,16 +109,15 @@ def init_events(bot, cli_flags):
         table_general_info.add_row("Storage type", data_manager.storage_type())
 
         table_bot_info = Table(show_edge=False, show_header=False, box=box.MINIMAL)
-        table_bot_info.add_row("Owner", owner_name)
-        table_bot_info.add_row("Developer", owner_name)
-        table_bot_info.add_row("Created By", cog_creators)
+        table_bot_info.add_row("Owner", owner_names)
+        table_bot_info.add_row("Developer", owner_names)
+        table_bot_info.add_row("Created By", red_creator)
         table_bot_info.add_row("Hosted On", host_company)
-        
+
         table_counts = Table(show_edge=False, show_header=False, box=box.MINIMAL)
-        # String conversion is needed as Rich doesn't deal with ints
         table_counts.add_row("Shards", str(bot.shard_count))
         table_counts.add_row("Servers", str(guilds))
-        if bot.intents.members:  # Lets avoid 0 Unique Users
+        if bot.intents.members:
             table_counts.add_row("Unique Users", str(users))
 
         outdated_red_message = ""
