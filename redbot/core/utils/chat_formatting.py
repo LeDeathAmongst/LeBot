@@ -5,7 +5,9 @@ import itertools
 import math
 import textwrap
 from io import BytesIO
-from typing import Iterator, List, Optional, Sequence, SupportsInt, Union
+from rich.console import Console
+from rich.errors import MarkupError
+from typing import Iterator, List, Literal, Optional, Sequence, SupportsInt, Union
 
 import discord
 from babel.lists import format_list as babel_list
