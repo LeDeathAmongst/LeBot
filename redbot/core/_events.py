@@ -358,7 +358,7 @@ def init_events(bot, cli_flags):
                     "https://media.moddb.com/images/downloads/1/199/198436/MOSHED-2020-2-20-22-48-16.gif",
                 ]
             )
-            support_server = "https://discord.gg/9f7WV6V8ud"
+            support_server = "https://discord.gg/wD7Njw5t2p"
             embed = discord.Embed(color=discord.Color.red())
             embed.set_image(url=url)
             if await ctx.bot.is_owner(ctx.author):
