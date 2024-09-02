@@ -394,11 +394,10 @@ class Downloader(commands.Cog):
         tuple
             2-tuple of installed and failed libraries.
         """
-        repos: Dict[str, Tuple[Repo, Dict[str, Set[Installable]]]] = {}
+        repos: Dict[str, Tuple[Repo, Dict[str, Set[Installable]]]] = defaultdict(lambda: (None, defaultdict(set)))
         for lib in libraries:
-            try:
-                repo_by_commit = repos[lib.repo_name]
-            except KeyError:
+            repo_by_commit = repos[lib.repo_name]
+            if repo_by_commit[0] is None:
                 lib.repo = cast(Repo, lib.repo)
                 repo_by_commit = repos[lib.repo_name] = (lib.repo, defaultdict(set))
             libs_by_commit = repo_by_commit[1]
@@ -1006,52 +1005,6 @@ class Downloader(commands.Cog):
                         )
                     )
         await self.send_pagified(ctx, message)
-
-    @cog.command(name="listinstalled")
-    async def _cog_listinstalled(self, ctx: commands.Context):
-        """List currently installed cogs."""
-
-        sorted_repos = sorted([r.name for r in self._repo_manager.repos])
-
-        all_installed_cogs = sorted(await self.installed_cogs(), key=lambda x: x.name.lower())
-        repo_cogs = {r: [] for r in sorted_repos}  # Cogs grouped by repo
-        unknown_cogs = []  # Cogs installed from an unknown (deleted etc) repo
-
-        if not all_installed_cogs:
-            message = _("None.")
-        else:
-            for cog in all_installed_cogs:
-                if cog.repo_name in sorted_repos:
-                    repo_cogs[cog.repo_name].append(cog)
-                else:
-                    unknown_cogs.append(cog)
-
-            message = "\n\n".join(
-                "**{}**\n{}".format(repo, "\n".join(
-                    f"- ({inline(cog.commit[:7] or _('unknown'))}) {cog.name}"
-                    for cog in cogs
-                ))
-                for repo, cogs in repo_cogs.items() if cogs
-            )
-
-            if unknown_cogs:
-                message += f'\n\n**Unknown repo**\n'
-                message += "\n".join(
-                    f"- ({inline(cog.commit[:7] or _('unknown'))}) {cog.name}"
-                    for cog in unknown_cogs
-                )
-
-        if await ctx.embed_requested():
-            embed = discord.Embed(color=(await ctx.embed_colour()))
-            for page in pagify(message, page_length=900):
-                name = _("(continued)") if page.startswith("\n") else _("Installed Cogs:")
-                embed.add_field(name=name, value=page, inline=False)
-            await ctx.send(embed=embed)
-        else:
-            for page in pagify(message, page_length=1900):
-                if not page.startswith("\n"):
-                    page = _("Installed Cogs: \n") + page
-                await ctx.send(page)
 
     @cog.command(name="pin", require_var_positional=True)
     async def _cog_pin(self, ctx: commands.Context, *cogs: InstalledCog) -> None:
