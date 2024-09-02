@@ -98,10 +98,12 @@ class SimpleMenu(discord.ui.View):
 
     Parameters
     ----------
+    bot: `commands.Bot`
+        The bot instance.
     pages: `list` of `str`, `discord.Embed`, or `dict`.
         The pages of the menu.
         if the page is a `dict` its keys must be valid messageable args.
-        e,g. "content", "embed", etc.
+        e.g. "content", "embed", etc.
     page_start: int
         The page to start the menu at.
     timeout: float
@@ -126,24 +128,11 @@ class SimpleMenu(discord.ui.View):
         The stop button will remain but is positioned
         under the select menu in this instance.
         Defaults to False.
-
-    Examples
-    --------
-        You can provide a list of strings::
-
-            from redbot.core.utils.views import SimpleMenu
-            pages = ["Hello", "Hi", "Bonjour", "Salut"]
-            await SimpleMenu(pages).start(ctx)
-
-        You can provide a list of dicts::
-
-            from redbot.core.utils.views import SimpleMenu
-            pages = [{"content": "My content", "embed": discord.Embed(description="hello")}]
-            await SimpleMenu(pages).start(ctx)
     """
 
     def __init__(
         self,
+        bot: commands.Bot,
         pages: List[_ACCEPTABLE_PAGE_TYPES],
         timeout: float = 180.0,
         page_start: int = 0,
@@ -153,10 +142,15 @@ class SimpleMenu(discord.ui.View):
         use_select_only: bool = False,
     ) -> None:
         super().__init__(timeout=timeout)
+        self.bot = bot  # Store the bot instance
 
         bot_name = self.bot.user.name
         # Define your homepage content here
-        homepage_content = "Welcome to the Help Homepage!\nHere you will find all of the commands that come packed with {bot_name}\nMake sure if you have any question, you contact death_waffle immediately, or open an issue on the GitHub\n```https://github.com/LeDeathAmongst/Red-DiscordBot```\nBrought to you by Star!"
+        homepage_content = (
+            f"Welcome to the Help Homepage!\nHere you will find all of the commands that come packed with {bot_name}\n"
+            "Make sure if you have any questions, you contact death_waffle immediately, or open an issue on the GitHub\n"
+            "```https://github.com/LeDeathAmongst/Red-DiscordBot```\nBrought to you by Star!"
+        )
 
         # Prepend the homepage to the pages list
         pages.insert(0, homepage_content)
@@ -194,7 +188,7 @@ class SimpleMenu(discord.ui.View):
         self.home_button = _NavigateButton(
             discord.ButtonStyle.gray,
             discord.PartialEmoji(name="home", animated=False, id=1280281517217550487),
-            direction=0
+            direction=0,
         )
         self.last_button = _NavigateButton(
             discord.ButtonStyle.gray,
@@ -213,7 +207,7 @@ class SimpleMenu(discord.ui.View):
             self.remove_item(self.stop_button)
             self.add_item(self.first_button)
             self.add_item(self.backward_button)
-            self.add_item(self.home_button)  # Add the home button here
+            self.add_item(self.home_button)
             self.add_item(self.stop_button)
             self.add_item(self.forward_button)
             self.add_item(self.last_button)
