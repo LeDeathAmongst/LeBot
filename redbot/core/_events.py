@@ -54,12 +54,12 @@ INTRO = r"""
 _ = Translator(__name__, __file__)
 
 # Example function to create a rainbow gradient text
-def rainbow_gradient(text: str) -> Text:
-    colors = ["red", "orange", "yellow", "green", "blue", "indigo", "violet"]
-    gradient_text = Text()
+def gradient_text(text, colors):
+    """Create a gradient effect for text by cycling through the given colors."""
+    gradient = Text()
     for i, char in enumerate(text):
-        gradient_text.append(char, style=colors[i % len(colors)])
-    return gradient_text
+        gradient.append(char, style=colors[i % len(colors)])
+    return gradient
 
 def init_events(bot, cli_flags):
     @bot.event
