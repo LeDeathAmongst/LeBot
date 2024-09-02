@@ -156,7 +156,7 @@ class SimpleMenu(discord.ui.View):
 
         bot_name = self.bot.user.name
         # Define your homepage content here
-        homepage_content = "Welcome to the Help Homepage!\nHere you will find all of the commands that come packed with" {bot_name}"\nMake sure if you have any question, you contact death_waffle immediately, or open an issue on the GitHub\n```https://github.com/LeDeathAmongst/Red-DiscordBot```\nBrought to you by Star!"
+        homepage_content = "Welcome to the Help Homepage!\nHere you will find all of the commands that come packed with {bot_name}\nMake sure if you have any question, you contact death_waffle immediately, or open an issue on the GitHub\n```https://github.com/LeDeathAmongst/Red-DiscordBot```\nBrought to you by Star!"
 
         # Prepend the homepage to the pages list
         pages.insert(0, homepage_content)
