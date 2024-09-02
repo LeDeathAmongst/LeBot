@@ -78,31 +78,6 @@ def get_cluster_info(cluster_id, shards, servers, users):
     table_cluster_info.add_row("Unique Users", str(users))
     return table_cluster_info
 
-async def _on_ready(bot, cli_flags):
-    bot._uptime = datetime.utcnow()
-    guilds = len(bot.guilds)
-    users = len(set([m for m in bot.get_all_members()]))
-    prefixes = cli_flags.prefix or (await bot._config.prefix())
-    lang = await bot._config.locale()
-    dpy_version = discord.__version__
-    py_version = platform.python_version()
-    owner_name = "Star"  # Replace with actual owner name retrieval logic
-
-    console = Console()
-    console.print(INTRO, style="dark_slate_gray2", markup=False, highlight=False)
-
-    bot_info = get_bot_info(bot, prefixes, lang, dpy_version, py_version, owner_name)
-    cluster_info = get_cluster_info(1, 5, guilds, users)  # Example cluster info
-
-    if guilds:
-        console.print(
-            Columns(
-                [Panel(rainbow_gradient(bot.user.display_name), title="Starfire"), Panel(bot_info), Panel(cluster_info)],
-                equal=True,
-                align="center",
-            )
-        )
-
 def init_events(bot, cli_flags):
     @bot.event
     async def on_connect():
@@ -112,10 +87,79 @@ def init_events(bot, cli_flags):
     @bot.event
     async def on_ready():
         try:
-            await _on_ready(bot, cli_flags)
+            await _on_ready()
         except Exception as exc:
             log.critical("The bot failed to get ready!", exc_info=exc)
             sys.exit(ExitCodes.CRITICAL)
+
+    async def _on_ready():
+        if bot._uptime is not None:
+            return
+
+        bot._uptime = discord.utils.utcnow()
+
+        guilds = len(bot.guilds)
+        users = len(set([m for m in bot.get_all_members()]))
+
+        invite_url = discord.utils.oauth_url(bot.application_id, scopes=("bot"))
+
+        prefixes = cli_flags.prefix or (await bot._config.prefix())
+        lang = await bot._config.locale()
+        dpy_version = discord.__version__
+
+        table_general_info = Table(show_edge=False, show_header=False, box=box.MINIMAL)
+        table_general_info.add_row("Prefixes", ", ".join(prefixes))
+        table_general_info.add_row("Language", lang)
+        table_general_info.add_row("Red version", red_version)
+        table_general_info.add_row("Discord.py version", dpy_version)
+        table_general_info.add_row("Storage type", data_manager.storage_type())
+
+        table_counts = Table(show_edge=False, show_header=False, box=box.MINIMAL)
+        # String conversion is needed as Rich doesn't deal with ints
+        table_counts.add_row("Shards", str(bot.shard_count))
+        table_counts.add_row("Servers", str(guilds))
+        if bot.intents.members:  # Lets avoid 0 Unique Users
+            table_counts.add_row("Unique Users", str(users))
+
+        outdated_red_message = ""
+        rich_outdated_message = ""
+        pypi_version, py_version_req = await fetch_latest_red_version_info()
+        outdated = pypi_version and pypi_version > red_version_info
+        if outdated:
+            outdated_red_message, rich_outdated_message = get_outdated_red_messages(
+                pypi_version, py_version_req
+            )
+
+        rich_console = rich.get_console()
+        rich_console.print(INTRO, style="dark_slate_gray2", markup=False, highlight=False)
+        if guilds:
+            rich_console.print(
+                Columns(
+                    [Panel(table_general_info, title=bot.user.display_name), Panel(table_counts), Panel(table_bot_info), Panel(table_cluster_info)],
+                    equal=True,
+                    align="center",
+                )
+            )
+        else:
+            rich_console.print(Columns([Panel(table_general_info, title=bot.user.display_name)]))
+
+        rich_console.print(
+            "Loaded {} cogs with {} commands".format(len(bot.cogs), len(bot.commands))
+        )
+
+        if invite_url:
+            rich_console.print(f"\nInvite URL: {Text(invite_url, style=f'link {invite_url}')}")
+            # We generally shouldn't care if the client supports it or not as Rich deals with it.
+        if not guilds:
+            rich_console.print(
+                f"Looking for a quick guide on setting up Red? Checkout {Text('https://start.discord.red', style='link https://start.discord.red}')}"
+            )
+        if rich_outdated_message:
+            rich_console.print(rich_outdated_message)
+
+        bot._red_ready.set()
+        if outdated_red_message:
+            await send_to_owners_with_prefix_replaced(bot, outdated_red_message)
 
     @bot.event
     async def on_command_completion(ctx: commands.Context):
