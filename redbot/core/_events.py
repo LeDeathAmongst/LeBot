@@ -68,7 +68,7 @@ def get_bot_info(bot, prefixes, lang, dpy_version, py_version, owner_name):
     table_general_info.add_row("Discord.py Version", dpy_version)
     table_general_info.add_row("Python Version", py_version)
     table_general_info.add_row("Owner:", owner_name)
-    return table_general_info
+    return table_bot_info
 
 def get_cluster_info(cluster_id, shards, servers, users):
     table_cluster_info = Table(show_edge=False, show_header=False, box=box.MINIMAL)
