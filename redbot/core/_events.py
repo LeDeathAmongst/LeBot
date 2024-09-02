@@ -91,6 +91,9 @@ def init_events(bot, cli_flags):
         dpy_version = discord.__version__
         red_creator = "Cog-Creators"
         host_company = "Shadow ~ Hosting"
+        owner_ids = ctx.bot.owner_ids
+        owners = [ctx.bot.get_user(owner_id) for owner_id in owner_ids]
+        owner_name = [owner.name for owner in owners if owner is not None]
 
         table_general_info = Table(show_edge=False, show_header=False, box=box.MINIMAL)
         table_general_info.add_row("Prefixes", ", ".join(prefixes))
