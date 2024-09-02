@@ -42,8 +42,8 @@ from rich.text import Text
 log = logging.getLogger("red")
 
 INTRO = r"""
- ____    _                     __   _               
-/ ___|  | |_    __ _   _ __   / _| (_)  _ __    ___ 
+ ____    _                     __   _
+/ ___|  | |_    __ _   _ __   / _| (_)  _ __    ___
 \___ \  | __|  / _` | | '__| | |_  | | | '__|  / _ \
  ___) | | |_  | (_| | | |    |  _| | | | |    |  __/
 |____/   \__|  \__,_| |_|    |_|   |_| |_|     \___|
@@ -51,79 +51,55 @@ INTRO = r"""
 
 _ = Translator(__name__, __file__)
 
+# Example function to create a rainbow gradient text
+def rainbow_gradient(text: str) -> Text:
+    colors = ["red", "orange", "yellow", "green", "blue", "indigo", "violet"]
+    gradient_text = Text()
+    for i, char in enumerate(text):
+        gradient_text.append(char, style=colors[i % len(colors)])
+    return gradient_text
 
-def get_outdated_red_messages(pypi_version: str, py_version_req: str) -> Tuple[str, str]:
-    outdated_red_message = _(
-        "Your Starfire instance is out of date! {} is the current version, however you are using {}!"
-    ).format(pypi_version, red_version)
-    extra_update = _(
-        "\n\nWhile the following command should work in most scenarios as it is "
-        "based on your current OS, environment, and Python version, "
-        "**we highly recommend you to read the update docs at <{WIP}> and "
-        "make sure there is nothing else that "
-        "needs to be done during the update.**"
-    ).format(WIP="https://prismbot.icu")
-    current_python = platform.python_version()
-    extra_update = _(
-        "\n\nWhile the following command should work in most scenarios as it is "
-        "based on your current OS, environment, and Python version")
+def get_bot_info(bot, prefixes, lang, dpy_version, py_version, owner_name):
+    table_general_info = Table(show_edge=False, show_header=False, box=box.MINIMAL)
+    table_general_info.add_row("Prefixes", ", ".join(prefixes))
+    table_general_info.add_row("Bot Version", red_version)
+    table_general_info.add_row("Discord.py Version", dpy_version)
+    table_general_info.add_row("Python Version", py_version)
+    table_general_info.add_row("Owner:", owner_name)
+    return table_general_info
 
-    rich_outdated_message = Text(outdated_red_message, style="bold red")
+def get_cluster_info(cluster_id, shards, servers, users):
+    table_cluster_info = Table(show_edge=False, show_header=False, box=box.MINIMAL)
+    table_cluster_info.add_row("Cluster ID", str(cluster_id))
+    table_cluster_info.add_row("Shards", str(shards))
+    table_cluster_info.add_row("Servers", str(servers))
+    table_cluster_info.add_row("Unique Users", str(users))
+    return table_cluster_info
 
-    if not expected_version(current_python, py_version_req):
-        extra_update += _(
-            "\n\nYou have Python `{py_version}` and this update "
-            "requires `{req_py}`; you cannot simply run the update command.\n\n"
-        ).format(py_version=current_python, req_py=py_version_req)
-        outdated_red_message += extra_update
-        rich_outdated_message += Text(extra_update, style="bold red")
-        return outdated_red_message, rich_outdated_message
+async def _on_ready(bot, cli_flags):
+    bot._uptime = datetime.utcnow()
+    guilds = len(bot.guilds)
+    users = len(set([m for m in bot.get_all_members()]))
+    prefixes = cli_flags.prefix or (await bot._config.prefix())
+    lang = await bot._config.locale()
+    dpy_version = discord.__version__
+    py_version = platform.python_version()
+    owner_name = "Star"  # Replace with actual owner name retrieval logic
 
-    red_dist = importlib.metadata.distribution("Red-DiscordBot")
-    installed_extras = red_dist.metadata.get_all("Provides-Extra")
-    installed_extras.remove("dev")
-    installed_extras.remove("all")
-    distributions = {}
-    for req_str in red_dist.requires:
-        req = Requirement(req_str)
-        if req.marker is None or req.marker.evaluate():
-            continue
-        for extra in reversed(installed_extras):
-            if not req.marker.evaluate({"extra": extra}):
-                continue
+    console = Console()
+    console.print(INTRO, style="dark_slate_gray2", markup=False, highlight=False)
 
-            if req.name in distributions:
-                dist = distributions[req.name]
-            else:
-                try:
-                    dist = importlib.metadata.distribution(req.name)
-                except importlib.metadata.PackageNotFoundError:
-                    dist = None
-                distributions[req.name] = dist
-            if dist is None or not req.specifier.contains(dist.version, prereleases=True):
-                installed_extras.remove(extra)
+    bot_info = get_bot_info(bot, prefixes, lang, dpy_version, py_version, owner_name)
+    cluster_info = get_cluster_info(1, 5, guilds, users)  # Example cluster info
 
-    if installed_extras:
-        package_extras = f"[{','.join(installed_extras)}]"
-    else:
-        package_extras = ""
-
-    extra_update += _(
-        "\n\nTo update your bot, first shutdown your bot"
-        " then open a window of {console} (Not as admin) and run the following:"
-        "{command_1}\n"
-        "Once you've started up your bot again, we recommend that"
-        " you update any installed 3rd-party cogs with this command in Discord:"
-        "{command_2}"
-    ).format(
-        console=_("Command Prompt") if platform.system() == "Windows" else _("Terminal"),
-        command_1=f'```"{sys.executable}" -m pip install -U "Starfire{package_extras}"```',
-        command_2=f"```[p]cog update```",
-    )
-    outdated_red_message += extra_update
-    rich_outdated_message += Text(extra_update, style="bold red")
-    return outdated_red_message, rich_outdated_message
-
+    if guilds:
+        console.print(
+            Columns(
+                [Panel(rainbow_gradient(bot.user.display_name), title="Starfire"), Panel(bot_info), Panel(cluster_info)],
+                equal=True,
+                align="center",
+            )
+        )
 
 def init_events(bot, cli_flags):
     @bot.event
@@ -134,77 +110,10 @@ def init_events(bot, cli_flags):
     @bot.event
     async def on_ready():
         try:
-            await _on_ready()
+            await _on_ready(bot, cli_flags)
         except Exception as exc:
             log.critical("The bot failed to get ready!", exc_info=exc)
             sys.exit(ExitCodes.CRITICAL)
-
-    async def _on_ready():
-        if bot._uptime is not None:
-            return
-
-        bot._uptime = datetime.utcnow()
-
-        guilds = len(bot.guilds)
-        users = len(set([m for m in bot.get_all_members()]))
-
-        invite_url = discord.utils.oauth_url(bot.application_id, scopes=("bot"))
-
-        prefixes = cli_flags.prefix or (await bot._config.prefix())
-        lang = await bot._config.locale()
-        dpy_version = discord.__version__
-
-        table_general_info = Table(show_edge=False, show_header=False, box=box.MINIMAL)
-        table_general_info.add_row("Prefixes", ", ".join(prefixes))
-        table_general_info.add_row("Language", lang)
-        table_general_info.add_row("Starfire version", red_version)
-        table_general_info.add_row("Discord.py version", dpy_version)
-        table_general_info.add_row("Storage type", data_manager.storage_type())
-
-        table_counts = Table(show_edge=False, show_header=False, box=box.MINIMAL)
-        table_counts.add_row("Shards", str(bot.shard_count))
-        table_counts.add_row("Servers", str(guilds))
-        if bot.intents.members:
-            table_counts.add_row("Unique Users", str(users))
-
-        outdated_red_message = ""
-        rich_outdated_message = ""
-        pypi_version, py_version_req = await fetch_latest_red_version_info()
-        outdated = pypi_version and pypi_version > red_version_info
-        if outdated:
-            outdated_red_message, rich_outdated_message = get_outdated_red_messages(
-                pypi_version, py_version_req
-            )
-
-        rich_console = rich.get_console()
-        rich_console.print(INTRO, style="dark_slate_gray2", markup=False, highlight=False)
-        if guilds:
-            rich_console.print(
-                Columns(
-                    [Panel(table_general_info, title=bot.user.display_name), Panel(table_counts)],
-                    equal=True,
-                    align="center",
-                )
-            )
-        else:
-            rich_console.print(Columns([Panel(table_general_info, title=bot.user.display_name)]))
-
-        rich_console.print(
-            "Loaded {} cogs with {} commands".format(len(bot.cogs), len(bot.commands))
-        )
-
-        if invite_url:
-            rich_console.print(f"\nInvite URL: {Text(invite_url, style=f'link {invite_url}')}")
-        if not guilds:
-            rich_console.print(
-                f"Looking for a quick guide on setting up FuturBot? Join the support server! Use ,invite to find out more!')"
-            )
-        if rich_outdated_message:
-            rich_console.print(rich_outdated_message)
-
-        bot._red_ready.set()
-        if outdated_red_message:
-            await send_to_owners_with_prefix_replaced(bot, outdated_red_message)
 
     @bot.event
     async def on_command_completion(ctx: commands.Context):
