@@ -93,7 +93,7 @@ def init_events(bot, cli_flags):
         host_company = "Shadow ~ Hosting"
 
         app_info = await bot.application_info()
-        owner_name = app_info.owner.name
+        owner_names = app_info.owner.name
 
         table_general_info = Table(show_edge=False, show_header=False, box=box.MINIMAL)
         table_general_info.add_row("Prefixes", ", ".join(prefixes))
