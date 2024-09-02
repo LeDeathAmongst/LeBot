@@ -5,6 +5,8 @@ import random
 import sys
 import logging
 import traceback
+from rich.console import Console
+from rich.errors import MarkupError
 from datetime import datetime, timedelta, timezone
 from typing import Tuple
 
