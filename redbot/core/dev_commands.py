@@ -392,7 +392,6 @@ class Dev(commands.Cog):
             "asyncio": asyncio,
             "aiohttp": aiohttp,
             "discord": discord,
-            "redbot": redbot,
             "commands": commands,
             "cf": chat_formatting,
             "_": self._last_result,
