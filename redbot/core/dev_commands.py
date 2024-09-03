@@ -1,4 +1,3 @@
-
 """
 The original implementation of this cog was heavily based on
 RoboDanny's REPL cog which can be found here:
@@ -28,7 +27,6 @@ from typing import Any, Awaitable, Dict, Iterator, List, Literal, Tuple, Type, T
 from types import CodeType, TracebackType
 
 import discord
-import redbot
 
 from . import commands
 from .commands import NoParseOptional as Optional
@@ -126,7 +124,6 @@ class DevOutput:
         filename: str,
         source: str,
         env: Dict[str, Any],
-        bot,
     ) -> None:
         self.ctx = ctx
         self.source_cache = source_cache
@@ -136,7 +133,6 @@ class DevOutput:
         self.raw_source = source
         self.set_compilable_source(source)
         self.env = env
-        self.bot = ctx.bot
         self.always_include_result = False
         self._stream = io.StringIO()
         self.formatted_exc = ""
@@ -207,7 +203,7 @@ class DevOutput:
         cls, ctx: commands.Context, *, source: str, source_cache: SourceCache, env: Dict[str, Any]
     ) -> DevOutput:
         output = cls(
-            ctx=ctx,
+            ctx,
             source=source,
             source_cache=source_cache,
             filename=f"<eval command - snippet #{source_cache.take_next_index()}>",
@@ -415,19 +411,19 @@ class DevOutput:
 class Dev(commands.Cog):
     """Various development focused utilities."""
 
-    def __init__(self) -> None:
-        super().__init__()
-        self._last_result = None
-        self.sessions = {}
-        self.env_extensions = {}
-        self.source_cache = SourceCache()
-
     async def red_delete_data_for_user(self, **kwargs: Any) -> None:
         """
         Because despite my best efforts to advise otherwise,
         people use ``--dev`` in production
         """
         return
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._last_result = None
+        self.sessions = {}
+        self.env_extensions = {}
+        self.source_cache = SourceCache()
 
     def get_environment(self, ctx: commands.Context) -> dict:
         env = {
@@ -440,7 +436,6 @@ class Dev(commands.Cog):
             "asyncio": asyncio,
             "aiohttp": aiohttp,
             "discord": discord,
-            "redbot": redbot,
             "commands": commands,
             "cf": chat_formatting,
             "_": self._last_result,
@@ -618,8 +613,8 @@ class Dev(commands.Cog):
     @commands.guild_only()
     @commands.command()
     @commands.is_owner()
-    async def mimic(self, ctx: commands.Context, user: discord.Member, *, command: str) -> None:
-        """Mimic another user invoking a command.
+    async def mock(self, ctx: commands.Context, user: discord.Member, *, command: str) -> None:
+        """Mock another user invoking a command.
 
         The prefix must not be entered.
         """
@@ -630,9 +625,9 @@ class Dev(commands.Cog):
         ctx.bot.dispatch("message", msg)
 
     @commands.guild_only()
-    @commands.command(name="mimicmsg")
+    @commands.command(name="mockmsg")
     @commands.is_owner()
-    async def mimic_msg(
+    async def mock_msg(
         self, ctx: commands.Context, user: discord.Member, *, content: str = ""
     ) -> None:
         """Dispatch a message event as if it were sent by a different user.
