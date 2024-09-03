@@ -136,7 +136,7 @@ class DevOutput:
         self.raw_source = source
         self.set_compilable_source(source)
         self.env = env
-        self.bot = bot
+        self.bot = ctx.bot
         self.always_include_result = False
         self._stream = io.StringIO()
         self.formatted_exc = ""
@@ -207,7 +207,7 @@ class DevOutput:
         cls, ctx: commands.Context, *, source: str, source_cache: SourceCache, env: Dict[str, Any]
     ) -> DevOutput:
         output = cls(
-            ctx,
+            ctx=ctx,
             source=source,
             source_cache=source_cache,
             filename=f"<eval command - snippet #{source_cache.take_next_index()}>",
