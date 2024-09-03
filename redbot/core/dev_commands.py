@@ -126,7 +126,7 @@ class DevOutput:
         filename: str,
         source: str,
         env: Dict[str, Any],
-        self.bot = bot
+        bot,
     ) -> None:
         self.ctx = ctx
         self.source_cache = source_cache
@@ -136,6 +136,7 @@ class DevOutput:
         self.raw_source = source
         self.set_compilable_source(source)
         self.env = env
+        self.bot = bot
         self.always_include_result = False
         self._stream = io.StringIO()
         self.formatted_exc = ""
