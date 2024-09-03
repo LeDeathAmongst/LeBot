@@ -18,7 +18,6 @@ import discord
 from redbot.core import commands, Config
 from redbot.core.utils.chat_formatting import pagify
 from redbot.core.utils.predicates import MessagePredicate
-from Star_Utils import Cog
 
 from . import commands
 from .commands import NoParseOptional as Optional
@@ -358,7 +357,7 @@ class DevOutput:
 
 
 @cog_i18n(_)
-class Dev(Cog):
+class Dev(commands.Cog):
     """Various development-focused utilities."""
 
     def __init__(self) -> None:
