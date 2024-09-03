@@ -126,6 +126,7 @@ class DevOutput:
         filename: str,
         source: str,
         env: Dict[str, Any],
+        self.bot = bot
     ) -> None:
         self.ctx = ctx
         self.source_cache = source_cache
@@ -138,7 +139,6 @@ class DevOutput:
         self.always_include_result = False
         self._stream = io.StringIO()
         self.formatted_exc = ""
-        self.bot = bot
         self.result: Any = None
         self._old_streams = []
 
