@@ -138,6 +138,7 @@ class DevOutput:
         self.always_include_result = False
         self._stream = io.StringIO()
         self.formatted_exc = ""
+        self.bot = bot
         self.result: Any = None
         self._old_streams = []
 
