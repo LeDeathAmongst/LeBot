@@ -1,3 +1,16 @@
+
+"""
+The original implementation of this cog was heavily based on
+RoboDanny's REPL cog which can be found here:
+https://github.com/Rapptz/RoboDanny/blob/f13e1c9a6a7205e50de6f91fa5326fc7113332d3/cogs/repl.py
+
+Copyright (c) 2017-present Cog Creators
+Copyright (c) 2016-2017 Rapptz
+
+The original copy was distributed under MIT License and this derivative work
+is distributed under GNU GPL Version 3.
+"""
+
 from __future__ import annotations
 
 import ast
@@ -15,17 +28,20 @@ from typing import Any, Awaitable, Dict, Iterator, List, Literal, Tuple, Type, T
 from types import CodeType, TracebackType
 
 import discord
-from redbot.core import commands, Config
-from redbot.core.utils.chat_formatting import pagify
-from redbot.core.utils.predicates import MessagePredicate
+import redbot
 
 from . import commands
 from .commands import NoParseOptional as Optional
 from .i18n import Translator, cog_i18n
 from .utils import chat_formatting
+from .utils.chat_formatting import pagify
+from .utils.predicates import MessagePredicate
 
 _ = Translator("Dev", __file__)
 
+# we want to match either:
+# - "```lang\n"
+# - or "```" and potentially also strip a single "\n" if it follows it immediately
 START_CODE_BLOCK_RE = re.compile(r"^((```[\w.+\-]+\n+(?!```))|(```\n*))")
 
 T = TypeVar("T")
@@ -61,8 +77,11 @@ async def maybe_await(coro: Union[T, Awaitable[T], Awaitable[Awaitable[T]]]) -> 
 
 def cleanup_code(content: str) -> str:
     """Automatically removes code blocks from the code."""
+    # remove ```py\n```
     if content.startswith("```") and content.endswith("```"):
         return START_CODE_BLOCK_RE.sub("", content)[:-3].rstrip("\n")
+
+    # remove `foo`
     return content.strip("` \n")
 
 
@@ -70,7 +89,9 @@ class SourceCache:
     MAX_SIZE = 1000
 
     def __init__(self) -> None:
+        # estimated to take less than 100 kB
         self._data: Dict[str, Tuple[str, int]] = {}
+        # this just keeps going up until the bot is restarted, shouldn't really be an issue
         self._next_index = 0
 
     def take_next_index(self) -> int:
@@ -79,9 +100,14 @@ class SourceCache:
         return next_index
 
     def __getitem__(self, key: str) -> Tuple[List[str], int]:
-        value = self._data.pop(key)
+        value = self._data.pop(key)  # pop to put it at the end as most recent
         self._data[key] = value
+        # To mimic linecache module's behavior,
+        # all lines (including the last one) should end with \n.
         source_lines = [f"{line}\n" for line in value[0].splitlines()]
+        # Note: while it might seem like a waste of time to always calculate the list of source lines,
+        # this is a necessary memory optimization. If all of the data in `self._data` were list,
+        # it could theoretically take up to 1000x as much memory.
         return source_lines, value[1]
 
     def __setitem__(self, key: str, value: Tuple[str, int]) -> None:
@@ -105,6 +131,7 @@ class DevOutput:
         self.source_cache = source_cache
         self.filename = filename
         self.source_line_offset = 0
+        #: raw source - as received from the command after stripping the code block
         self.raw_source = source
         self.set_compilable_source(source)
         self.env = env
@@ -116,6 +143,7 @@ class DevOutput:
 
     @property
     def compilable_source(self) -> str:
+        """Source string that we pass to async_compile()."""
         return self._compilable_source
 
     def set_compilable_source(self, compilable_source: str, *, line_offset: int = 0) -> None:
@@ -238,6 +266,7 @@ class DevOutput:
         self.set_compilable_source(self.raw_source)
         executor = None
         if self.raw_source.count("\n") == 0:
+            # single statement, potentially 'eval'
             try:
                 code = self.async_compile_with_eval()
             except SyntaxError:
@@ -272,6 +301,20 @@ class DevOutput:
         return async_compile(self.compilable_source, self.filename, "eval")
 
     def format_exception(self, exc: Exception, *, skip_frames: int = 1) -> str:
+        """
+        Format an exception to send to the user.
+
+        This function makes a few alterations to the traceback:
+        - First `skip_frames` frames are skipped so that we don't show the frames
+          that are part of Red's code to the user
+        - `FrameSummary` objects that we get from traceback module are updated
+          with the string for the corresponding line of code as otherwise
+          the generated traceback string wouldn't show user's code.
+        - If `line_offset` is passed, this function subtracts it from line numbers
+          in `FrameSummary` objects so that those numbers properly correspond to
+          the code that was provided by the user. This is needed for cases where
+          we wrap user's code in an async function before exec-ing it.
+        """
         exc_type = type(exc)
         tb = exc.__traceback__
         for x in range(skip_frames):
@@ -280,6 +323,7 @@ class DevOutput:
             tb = tb.tb_next
 
         filename = self.filename
+        # sometimes SyntaxError.text is None, sometimes it isn't
         if issubclass(exc_type, SyntaxError) and exc.lineno is not None:
             try:
                 source_lines, line_offset = self.source_cache[exc.filename]
@@ -288,8 +332,10 @@ class DevOutput:
             else:
                 if exc.text is None:
                     try:
+                        # line numbers are 1-based, the list indexes are 0-based
                         exc.text = source_lines[exc.lineno - 1]
                     except IndexError:
+                        # the frame might be pointing at a different source code, ignore...
                         pass
                     else:
                         exc.lineno -= line_offset
@@ -302,14 +348,18 @@ class DevOutput:
 
         top_traceback_exc = traceback.TracebackException(exc_type, exc, tb)
         py311_or_above = sys.version_info >= (3, 11)
-        queue = [top_traceback_exc]
+        queue = [  # actually a stack but 'stack' is easy to confuse with actual traceback stack
+            top_traceback_exc,
+        ]
         seen = {id(top_traceback_exc)}
         while queue:
             traceback_exc = queue.pop()
 
+            # handle exception groups; this uses getattr() to support `exceptiongroup` backport lib
             exceptions: List[traceback.TracebackException] = (
                 getattr(traceback_exc, "exceptions", None) or []
             )
+            # handle exception chaining
             if traceback_exc.__cause__ is not None:
                 exceptions.append(traceback_exc.__cause__)
             if traceback_exc.__context__ is not None:
@@ -330,10 +380,13 @@ class DevOutput:
                     continue
 
                 try:
+                    # line numbers are 1-based, the list indexes are 0-based
                     line = source_lines[lineno - 1]
                 except IndexError:
+                    # the frame might be pointing at a different source code, ignore...
                     continue
                 lineno -= line_offset
+                # support for enhanced error locations in tracebacks
                 if py311_or_above:
                     end_lineno = frame_summary.end_lineno
                     if end_lineno is not None:
@@ -358,7 +411,7 @@ class DevOutput:
 
 @cog_i18n(_)
 class Dev(commands.Cog):
-    """Various development-focused utilities."""
+    """Various development focused utilities."""
 
     def __init__(self) -> None:
         super().__init__()
@@ -367,19 +420,12 @@ class Dev(commands.Cog):
         self.env_extensions = {}
         self.source_cache = SourceCache()
 
-        # Initialize configuration with default values
-        self.config = Config.get_conf(self, identifier=1234567890, force_registration=True)
-        default_global = {"bypass_cooldowns": False}
-        self.config.register_global(**default_global)
-
     async def red_delete_data_for_user(self, **kwargs: Any) -> None:
-        """No user data to delete."""
+        """
+        Because despite my best efforts to advise otherwise,
+        people use ``--dev`` in production
+        """
         return
-
-    async def initialize(self):
-        # Load the bypass_cooldowns setting from the config
-        bypass_cooldowns = await self.config.bypass_cooldowns()
-        self.bot._bypass_cooldowns = bypass_cooldowns
 
     def get_environment(self, ctx: commands.Context) -> dict:
         env = {
@@ -392,6 +438,7 @@ class Dev(commands.Cog):
             "asyncio": asyncio,
             "aiohttp": aiohttp,
             "discord": discord,
+            "redbot": redbot,
             "commands": commands,
             "cf": chat_formatting,
             "_": self._last_result,
@@ -607,15 +654,12 @@ class Dev(commands.Cog):
     @commands.command()
     @commands.is_owner()
     async def bypasscooldowns(self, ctx: commands.Context, toggle: Optional[bool] = None) -> None:
-        """Toggle the ability for bot owners to bypass cooldowns.
+        """Give bot owners the ability to bypass cooldowns.
 
-        This setting can persist through restarts if configured.
-        """
+        Does not persist through restarts."""
         if toggle is None:
             toggle = not ctx.bot._bypass_cooldowns
-
         ctx.bot._bypass_cooldowns = toggle
-        await self.config.bypass_cooldowns.set(toggle)
 
         if toggle:
             await ctx.send(_("Bot owners will now bypass all commands with cooldowns."))
