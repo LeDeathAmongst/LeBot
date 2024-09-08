@@ -3,19 +3,20 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import os
-import re
 from typing import Iterable, List, Union, Optional, TYPE_CHECKING
 import discord
 from discord.ext.commands import Context as DPYContext
 
 from .requires import PermState
+from ..utils.chat_formatting import box, text_to_file
+from ..utils.predicates import MessagePredicate
 from ..utils import can_user_react_in
 
 if TYPE_CHECKING:
     from .commands import Command
     from ..bot import Red
 
-TICK = "\N{WHITE HEAVY CHECK MARK}"
+TICK = "<a:Tick:1279795666507272225>"
 
 __all__ = ["Context", "GuildContext", "DMContext"]
 
