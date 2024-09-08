@@ -1232,6 +1232,10 @@ class Downloader(commands.Cog):
                     ctx, cogs_to_update, libs_to_update, current_cog_versions=cogs_to_check
                 )
                 message += update_message
+
+                # Automatically reload updated cogs
+                updated_cognames = {cog.name for cog in cogs_to_update}
+                await ctx.invoke(ctx.bot.get_cog("Core").reload, *updated_cognames)
             else:
                 message += info(_("All cogs are up to date."))
 
@@ -1242,11 +1246,6 @@ class Downloader(commands.Cog):
                 message += filter_message
 
         await self.send_pagified(ctx, message)
-
-        # Optionally, ask to reload updated cogs
-        if cogs_to_update:
-            updated_cognames = {cog.name for cog in cogs_to_update}
-            await self._ask_for_cog_reload(ctx, updated_cognames)
 
     @cog.command(name="updatetoversion")
     async def _cog_updatetoversion(
