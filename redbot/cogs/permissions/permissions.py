@@ -32,6 +32,8 @@ GLOBAL = 0
 _OldConfigSchema = Dict[int, Dict[str, Dict[str, Dict[str, Dict[str, List[int]]]]]]
 _NewConfigSchema = Dict[str, Dict[int, Dict[str, Dict[int, bool]]]]
 
+# The strings in the schema are constants and should get extracted, but not translated until
+# runtime.
 translate = _
 _ = lambda s: s
 YAML_SCHEMA = Schema(
@@ -80,9 +82,31 @@ __version__ = "1.0.0"
 class Permissions(commands.Cog):
     """Customize permissions for commands and cogs."""
 
+    # The command groups in this cog should never directly take any configuration actions
+    # These should be delegated to specific commands so that it remains trivial
+    # to prevent the guild owner from ever locking themselves out
+    # see ``Permissions.__permissions_hook`` for more details
+
     def __init__(self, bot: Red):
         super().__init__()
         self.bot = bot
+        # Config Schema:
+        # "COG"
+        # -> Cog names...
+        #   -> Guild IDs...
+        #     -> Model IDs...
+        #       -> True|False
+        #     -> "default"
+        #       -> True|False
+        # "COMMAND"
+        # -> Command names...
+        #   -> Guild IDs...
+        #     -> Model IDs...
+        #       -> True|False
+        #     -> "default"
+        #       -> True|False
+
+        # Note that GLOBAL rules are denoted by an ID of 0.
         self.config = config.Config.get_conf(self, identifier=78631113035100160)
         self.config.register_global(version="")
         self.config.init_custom(COG, 1)
@@ -101,6 +125,9 @@ class Permissions(commands.Cog):
 
         count = 0
         _uid = str(user_id)
+
+        # The dict as returned here as string keys. Above is for comparison,
+        # there's a below recast to int where needed for guild ids
 
         for typename, getter in ((COG, self.bot.get_cog), (COMMAND, self.bot.get_command)):
             obj_type_rules = await self.config.custom(typename).all()
@@ -123,6 +150,7 @@ class Permissions(commands.Cog):
 
                     if _uid in guild_rules:
                         if obj:
+                            # delegate to remove rule here
                             await self._remove_rule(
                                 CogOrCommand(typename, obj.qualified_name, obj),
                                 user_id,
@@ -133,11 +161,28 @@ class Permissions(commands.Cog):
                             await grp.clear_raw(guild_id, user_id)
 
     async def __permissions_hook(self, ctx: commands.Context) -> Optional[bool]:
+        """
+        Purpose of this hook is to prevent guild owner lockouts of permissions specifically
+        without modifying rule behavior in any other case.
+
+        Guild owner is not special cased outside of these configuration commands
+        to allow guild owner to restrict the use of potentially damaging commands
+        such as, but not limited to, cleanup to specific channels.
+
+        Leaving the configuration commands special cased allows guild owners to fix
+        any misconfigurations.
+        """
+
         if ctx.guild:
             if ctx.author == ctx.guild.owner:
+                # the below should contain all commands from this cog
+                # which configure or are useful to the
+                # configuration of guild permissions and should never
+                # have a potential impact on global configuration
+                # as well as the parent groups
                 if ctx.command in (
-                    self.permissions,
-                    self.permissions_acl,
+                    self.permissions,  # main top level group
+                    self.permissions_acl,  # acl group
                     self.permissions_acl_getguild,
                     self.permissions_acl_setguild,
                     self.permissions_acl_updateguild,
@@ -148,8 +193,9 @@ class Permissions(commands.Cog):
                     self.permissions_canrun,
                     self.permissions_explain,
                 ):
-                    return True
+                    return True  # permission rules will be ignored at this case
 
+        # this delegates to permissions rules, do not change to False which would deny
         return None
 
     @commands.hybrid_group()
@@ -159,7 +205,9 @@ class Permissions(commands.Cog):
 
     @permissions.command(name="explain")
     async def permissions_explain(self, ctx: commands.Context):
-        """Explain how permissions work."""
+        """Explain how permissions works."""
+        # Apologies in advance for the translators out there...
+
         message = _(
             "This cog extends the default permission model of the bot. By default, many commands "
             "are restricted based on what the command can do.\n"
@@ -179,6 +227,7 @@ class Permissions(commands.Cog):
             "For more details, please read the [official documentation]"
             "(https://docs.discord.red/en/stable/cog_permissions.html)."
         )
+
         embed = discord.Embed(title="Permissions Explanation", description=message, color=discord.Color.blue())
         await ctx.send(embed=embed)
 
@@ -186,7 +235,12 @@ class Permissions(commands.Cog):
     async def permissions_canrun(
         self, ctx: commands.Context, user: discord.Member, *, command: str
     ):
-        """Check if a user can run a command."""
+        """Check if a user can run a command.
+
+        This will take the current context into account, such as the
+        server and text channel.
+        """
+
         if not command:
             return await ctx.send_help()
 
@@ -209,7 +263,7 @@ class Permissions(commands.Cog):
             out = (
                 success(_("That user can run the specified command."))
                 if can
-                else error(_("That user can not run the specified command."))
+                else error(_("That user cannot run the specified command."))
             )
         embed = discord.Embed(description=out, color=discord.Color.green() if "success" in out else discord.Color.red())
         await ctx.send(embed=embed)
@@ -222,7 +276,7 @@ class Permissions(commands.Cog):
 
     @permissions_acl.command(name="yamlexample")
     async def permissions_acl_yaml_example(self, ctx: commands.Context):
-        """Sends an example of the YAML layout for permissions."""
+        """Sends an example of the yaml layout for permissions"""
         example_yaml = textwrap.dedent(
             """\
             COMMAND:
@@ -242,14 +296,25 @@ class Permissions(commands.Cog):
     @commands.is_owner()
     @permissions_acl.command(name="setglobal")
     async def permissions_acl_setglobal(self, ctx: commands.Context):
-        """Set global rules with a YAML file."""
+        """Set global rules with a YAML file.
+
+        **WARNING**: This will override reset *all* global rules
+        to the rules specified in the uploaded file.
+
+        This does not validate the names of commands and cogs before
+        setting the new rules.
+        """
         await self._permissions_acl_set(ctx, guild_id=GLOBAL, update=False)
 
     @commands.guild_only()
     @commands.guildowner_or_permissions(administrator=True)
     @permissions_acl.command(name="setserver", aliases=["setguild"])
     async def permissions_acl_setguild(self, ctx: commands.Context):
-        """Set rules for this server with a YAML file."""
+        """Set rules for this server with a YAML file.
+
+        **WARNING**: This will override reset *all* rules in this
+        server to the rules specified in the uploaded file.
+        """
         await self._permissions_acl_set(ctx, guild_id=ctx.guild.id, update=False)
 
     @commands.is_owner()
@@ -285,14 +350,22 @@ class Permissions(commands.Cog):
     @commands.is_owner()
     @permissions_acl.command(name="updateglobal")
     async def permissions_acl_updateglobal(self, ctx: commands.Context):
-        """Update global rules with a YAML file."""
+        """Update global rules with a YAML file.
+
+        This won't touch any rules not specified in the YAML
+        file.
+        """
         await self._permissions_acl_set(ctx, guild_id=GLOBAL, update=True)
 
     @commands.guild_only()
     @commands.guildowner_or_permissions(administrator=True)
     @permissions_acl.command(name="updateserver", aliases=["updateguild"])
     async def permissions_acl_updateguild(self, ctx: commands.Context):
-        """Update rules for this server with a YAML file."""
+        """Update rules for this server with a YAML file.
+
+        This won't touch any rules not specified in the YAML
+        file.
+        """
         await self._permissions_acl_set(ctx, guild_id=ctx.guild.id, update=True)
 
     @commands.is_owner()
@@ -304,7 +377,15 @@ class Permissions(commands.Cog):
         cog_or_command: CogOrCommand,
         *who_or_what: GlobalUniqueObjectFinder,
     ):
-        """Add a global rule to a command."""
+        """Add a global rule to a command.
+
+        `<allow_or_deny>` should be one of "allow" or "deny".
+
+        `<cog_or_command>` is the cog or command to add the rule to.
+        This is case sensitive.
+
+        `<who_or_what...>` is one or more users, channels or roles the rule is for.
+        """
         rule = allow_or_deny == "allow"
         for w in who_or_what:
             await self._add_rule(
@@ -328,7 +409,15 @@ class Permissions(commands.Cog):
         cog_or_command: CogOrCommand,
         *who_or_what: GuildUniqueObjectFinder,
     ):
-        """Add a rule to a command in this server."""
+        """Add a rule to a command in this server.
+
+        `<allow_or_deny>` should be one of "allow" or "deny".
+
+        `<cog_or_command>` is the cog or command to add the rule to.
+        This is case sensitive.
+
+        `<who_or_what...>` is one or more users, channels or roles the rule is for.
+        """
         rule = allow_or_deny == "allow"
         for w in who_or_what:
             await self._add_rule(
@@ -348,7 +437,13 @@ class Permissions(commands.Cog):
         cog_or_command: CogOrCommand,
         *who_or_what: GlobalUniqueObjectFinder,
     ):
-        """Remove a global rule from a command."""
+        """Remove a global rule from a command.
+
+        `<cog_or_command>` is the cog or command to remove the rule
+        from. This is case sensitive.
+
+        `<who_or_what...>` is one or more users, channels or roles the rule is for.
+        """
         for w in who_or_what:
             await self._remove_rule(cog_or_cmd=cog_or_command, model_id=w.id, guild_id=GLOBAL)
         embed = discord.Embed(description=_("Rule removed."), color=discord.Color.red())
@@ -365,7 +460,13 @@ class Permissions(commands.Cog):
         cog_or_command: CogOrCommand,
         *who_or_what: GlobalUniqueObjectFinder,
     ):
-        """Remove a server rule from a command."""
+        """Remove a server rule from a command.
+
+        `<cog_or_command>` is the cog or command to remove the rule
+        from. This is case sensitive.
+
+        `<who_or_what...>` is one or more users, channels or roles the rule is for.
+        """
         for w in who_or_what:
             await self._remove_rule(
                 cog_or_cmd=cog_or_command, model_id=w.id, guild_id=ctx.guild.id
@@ -379,7 +480,17 @@ class Permissions(commands.Cog):
     async def permissions_setdefaultguildrule(
         self, ctx: commands.Context, allow_or_deny: Literal["allow", "deny", "clear"], cog_or_command: CogOrCommand
     ):
-        """Set the default rule for a command in this server."""
+        """Set the default rule for a command in this server.
+
+        This is the rule a command will default to when no other rule
+        is found.
+
+        `<allow_or_deny>` should be one of "allow", "deny" or "clear".
+        "clear" will reset the default rule.
+
+        `<cog_or_command>` is the cog or command to set the default
+        rule for. This is case sensitive.
+        """
         rule = {"allow": True, "deny": False, "clear": None}[allow_or_deny]
         await self._set_default_rule(
             rule=rule,
@@ -394,7 +505,17 @@ class Permissions(commands.Cog):
     async def permissions_setdefaultglobalrule(
         self, ctx: commands.Context, allow_or_deny: Literal["allow", "deny", "clear"], cog_or_command: CogOrCommand
     ):
-        """Set the default global rule for a command."""
+        """Set the default global rule for a command.
+
+        This is the rule a command will default to when no other rule
+        is found.
+
+        `<allow_or_deny>` should be one of "allow", "deny" or "clear".
+        "clear" will reset the default rule.
+
+        `<cog_or_command>` is the cog or command to set the default
+        rule for. This is case sensitive.
+        """
         rule = {"allow": True, "deny": False, "clear": None}[allow_or_deny]
         await self._set_default_rule(
             rule=rule, cog_or_cmd=cog_or_command, guild_id=GLOBAL
@@ -423,13 +544,23 @@ class Permissions(commands.Cog):
 
     @commands.Cog.listener()
     async def on_cog_add(self, cog: commands.Cog) -> None:
+        """Event listener for `cog_add`.
+
+        This loads rules whenever a new cog is added.
+        """
         if cog is self:
+            # This cog has its rules loaded manually in setup()
             return
         await self._on_cog_add(cog)
 
     @commands.Cog.listener()
     async def on_command_add(self, command: commands.Command) -> None:
+        """Event listener for `command_add`.
+
+        This loads rules whenever a new command is added.
+        """
         if command.cog is self:
+            # This cog's commands have their rules loaded manually in setup()
             return
         await self._on_command_add(command)
 
@@ -450,6 +581,12 @@ class Permissions(commands.Cog):
     async def _add_rule(
         self, rule: bool, cog_or_cmd: CogOrCommand, model_id: int, guild_id: int
     ) -> None:
+        """Add a rule.
+
+        Guild ID should be 0 for global rules.
+
+        Handles config.
+        """
         if rule is True:
             cog_or_cmd.obj.allow_for(model_id, guild_id=guild_id)
         else:
@@ -459,6 +596,12 @@ class Permissions(commands.Cog):
             rules.setdefault(str(guild_id), {})[str(model_id)] = rule
 
     async def _remove_rule(self, cog_or_cmd: CogOrCommand, model_id: int, guild_id: int) -> None:
+        """Remove a rule.
+
+        Guild ID should be 0 for global rules.
+
+        Handles config.
+        """
         cog_or_cmd.obj.clear_rule_for(model_id, guild_id=guild_id)
         guild_id, model_id = str(guild_id), str(model_id)
         async with self.config.custom(cog_or_cmd.type, cog_or_cmd.name).all() as rules:
@@ -468,11 +611,23 @@ class Permissions(commands.Cog):
     async def _set_default_rule(
         self, rule: Optional[bool], cog_or_cmd: CogOrCommand, guild_id: int
     ) -> None:
+        """Set the default rule.
+
+        Guild ID should be 0 for the global default.
+
+        Handles config.
+        """
         cog_or_cmd.obj.set_default_rule(rule, guild_id)
         async with self.config.custom(cog_or_cmd.type, cog_or_cmd.name).all() as rules:
             rules.setdefault(str(guild_id), {})["default"] = rule
 
     async def _clear_rules(self, guild_id: int) -> None:
+        """Clear all global rules or rules for a guild.
+
+        Guild ID should be 0 for global rules.
+
+        Handles config.
+        """
         self.bot.clear_permission_rules(guild_id, preserve_default_rule=False)
         for category in (COG, COMMAND):
             async with self.config.custom(category).all() as all_rules:
@@ -482,6 +637,7 @@ class Permissions(commands.Cog):
     async def _permissions_acl_set(
         self, ctx: commands.Context, guild_id: int, update: bool
     ) -> None:
+        """Set rules from a YAML file and handle response to users too."""
         if not ctx.message.attachments:
             await ctx.send(_("Supply a file with next message or type anything to cancel."))
             try:
@@ -510,6 +666,7 @@ class Permissions(commands.Cog):
             await ctx.send(_("Rules set."))
 
     async def _yaml_set_acl(self, source: discord.Attachment, guild_id: int, update: bool) -> None:
+        """Set rules from a YAML file."""
         with io.BytesIO() as fp:
             await source.save(fp)
             rules = yaml.safe_load(fp)
@@ -533,6 +690,7 @@ class Permissions(commands.Cog):
                     self._load_rules_for(cmd_obj, {guild_id: cmd_rules})
 
     async def _yaml_get_acl(self, guild_id: int) -> discord.File:
+        """Get a YAML file for all rules set in a guild."""
         guild_rules = {}
         for category in (COG, COMMAND):
             guild_rules.setdefault(category, {})
@@ -547,8 +705,10 @@ class Permissions(commands.Cog):
 
     @staticmethod
     async def _confirm(ctx: commands.Context) -> bool:
+        """Ask "Are you sure?" and get the response as a bool."""
         if ctx.guild is None or can_user_react_in(ctx.guild.me, ctx.channel):
             msg = await ctx.send(_("Are you sure?"))
+            # noinspection PyAsyncCall
             task = start_adding_reactions(msg, ReactionPredicate.YES_OR_NO_EMOJIS)
             pred = ReactionPredicate.yes_or_no(msg, ctx.author)
             try:
@@ -577,10 +737,16 @@ class Permissions(commands.Cog):
         return agreed
 
     async def initialize(self) -> None:
+        """Initialize this cog.
+
+        This will load all rules from config onto every currently
+        loaded command.
+        """
         await self._maybe_update_schema()
         await self._load_all_rules()
 
     async def _maybe_update_schema(self) -> None:
+        """Maybe update rules set by config prior to permissions 1.0.0."""
         if await self.config.version():
             return
         old_config = await self.config.all_guilds()
@@ -594,6 +760,26 @@ class Permissions(commands.Cog):
     def _get_updated_schema(
         old_config: _OldConfigSchema,
     ) -> Tuple[_NewConfigSchema, _NewConfigSchema]:
+        # Prior to 1.0.0, the schema was in this form for both global
+        # and guild-based rules:
+        # "owner_models"
+        # -> "cogs"
+        #   -> Cog names...
+        #     -> "allow"
+        #       -> [Model IDs...]
+        #     -> "deny"
+        #       -> [Model IDs...]
+        #     -> "default"
+        #       -> "allow"|"deny"
+        # -> "commands"
+        #   -> Command names...
+        #     -> "allow"
+        #       -> [Model IDs...]
+        #     -> "deny"
+        #       -> [Model IDs...]
+        #     -> "default"
+        #       -> "allow"|"deny"
+
         new_cog_rules = {}
         new_cmd_rules = {}
         for guild_id, old_rules in old_config.items():
@@ -605,6 +791,9 @@ class Permissions(commands.Cog):
                     for name, rules in old_rules[category].items():
                         these_rules = new_rules.setdefault(name, {})
                         guild_rules = these_rules.setdefault(str(guild_id), {})
+                        # Since allow rules would take precedence if the same model ID
+                        # sat in both the allow and deny list, we add the deny entries
+                        # first and let any conflicting allow entries overwrite.
                         for model_id in rules.get("deny", []):
                             guild_rules[str(model_id)] = False
                         for model_id in rules.get("allow", []):
@@ -618,6 +807,7 @@ class Permissions(commands.Cog):
         return new_cog_rules, new_cmd_rules
 
     async def _load_all_rules(self):
+        """Load all of this cog's rules into loaded commands and cogs."""
         for category, getter in ((COG, self.bot.get_cog), (COMMAND, self.bot.get_command)):
             all_rules = await self.config.custom(category).all()
             for name, rules in all_rules.items():
@@ -631,6 +821,11 @@ class Permissions(commands.Cog):
         cog_or_command: Union[commands.Command, commands.Cog],
         rule_dict: Dict[Union[int, str], Dict[Union[int, str], bool]],
     ) -> None:
+        """Load the rules into a command or cog object.
+
+        rule_dict should be a dict mapping Guild IDs to Model IDs to
+        rules.
+        """
         for guild_id, guild_dict in _int_key_map(rule_dict.items()):
             for model_id, rule in _int_key_map(guild_dict.items()):
                 if model_id == "default":
@@ -644,6 +839,11 @@ class Permissions(commands.Cog):
         await self._unload_all_rules()
 
     async def _unload_all_rules(self) -> None:
+        """Unload all rules set by this cog.
+
+        This is done instead of just clearing all rules, which could
+        clear rules set by other cogs.
+        """
         for category, getter in ((COG, self.bot.get_cog), (COMMAND, self.bot.get_command)):
             all_rules = await self.config.custom(category).all()
             for name, rules in all_rules.items():
@@ -657,6 +857,11 @@ class Permissions(commands.Cog):
         cog_or_command: Union[commands.Command, commands.Cog],
         rule_dict: Dict[Union[int, str], Dict[Union[int, str], bool]],
     ) -> None:
+        """Unload the rules from a command or cog object.
+
+        rule_dict should be a dict mapping Guild IDs to Model IDs to
+        rules.
+        """
         for guild_id, guild_dict in _int_key_map(rule_dict.items()):
             for model_id in guild_dict.keys():
                 if model_id == "default":
