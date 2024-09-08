@@ -9,12 +9,13 @@ from redbot.core.utils.chat_formatting import bold, humanize_list, humanize_numb
 from redbot.core.utils.menus import menu
 from redbot.core.utils.views import ConfirmView
 from typing import Dict, List, Union
+from Star_Utils import Cog
 
 _ = T_ = Translator("GuildManager", __file__)
 
 
 @cog_i18n(_)
-class GuildManager(commands.Cog):
+class GuildManager(Cog):
     """Guild management tools."""
 
     def __init__(self, bot: Red) -> None:
