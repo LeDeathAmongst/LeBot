@@ -1210,6 +1210,50 @@ class Downloader(commands.Cog):
             ctx.assume_yes = True
         await self._cog_update_logic(ctx, repos=repos)
 
+    @commands.is_owner()
+    @commands.command(name="updrall", aliases=["rur"], hidden=True)
+    async def _cog_updateall(self, ctx: commands.Context) -> None:
+        """Update all repositories and their cogs if updates are available."""
+        async with ctx.typing():
+            # Update all repositories
+            updated_repos, failed_repos = await self._repo_manager.update_repos()
+
+            # Check for updates on all cogs
+            try:
+                cogs_to_check, failed_cogs = await self._get_cogs_to_check()
+                cogs_to_update, libs_to_update = await self._available_updates(cogs_to_check)
+            except errors.UnknownRevision as e:
+                # Log the error and skip the problematic revision
+                log.warning(f"Skipping update due to unknown revision: {e}")
+                await ctx.send(f"Skipping update for a cog due to an unknown revision: {e}")
+                return
+
+            # Filter out cogs that cannot be updated
+            cogs_to_update, filter_message = self._filter_incorrect_cogs(cogs_to_update)
+
+            # Message to be sent to the user
+            message = ""
+
+            if cogs_to_update or libs_to_update:
+                updated_cognames, update_message = await self._update_cogs_and_libs(
+                    ctx, cogs_to_update, libs_to_update, current_cog_versions=cogs_to_check
+                )
+                message += update_message
+
+                # Automatically reload updated cogs
+                updated_cognames = {cog.name for cog in cogs_to_update}
+                await ctx.invoke(ctx.bot.get_cog("Core").reload, *updated_cognames)
+            else:
+                message += info(_("All cogs are up to date."))
+
+            if failed_repos:
+                message += "\n" + self.format_failed_repos(failed_repos)
+
+            if filter_message:
+                message += filter_message
+
+        await self.send_pagified(ctx, message)
+
     @cog.command(name="updatetoversion")
     async def _cog_updatetoversion(
         self,
@@ -1860,8 +1904,8 @@ class Downloader(commands.Cog):
             )
             cog_pkg_name = cog_installable.name
         elif cog.__module__.startswith("redbot."):
-            made_by = "Cog Creators"
-            repo_url = "https://github.com/Shiro-DiscordBot/Red-DiscordBot"
+            made_by = "Cog Creators, modified by Star"
+            repo_url = "https://github.com/LeDeathAmongst/Red-DiscordBot"
             module_fragments = cog.__module__.split(".")
             if module_fragments[1] == "core":
                 cog_pkg_name = "N/A - Built-in Commands"
