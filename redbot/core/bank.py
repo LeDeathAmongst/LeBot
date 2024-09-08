@@ -55,15 +55,15 @@ _SCHEMA_VERSION = 1
 _DEFAULT_GLOBAL = {
     "schema_version": 0,
     "is_global": False,
-    "bank_name": "Twentysix bank",
-    "currency": "credits",
+    "bank_name": "Starlight Bank",
+    "currency": "Stardust",
     "default_balance": 100,
     "max_balance": _MAX_BALANCE,
 }
 
 _DEFAULT_GUILD = {
-    "bank_name": "Twentysix bank",
-    "currency": "credits",
+    "bank_name": "Starlight Bank",
+    "currency": "Stardust",
     "default_balance": 100,
     "max_balance": _MAX_BALANCE,
 }
