@@ -15,6 +15,7 @@ from redbot.core.utils.chat_formatting import box, error, success
 from redbot.core.utils.menus import start_adding_reactions
 from redbot.core.utils.predicates import ReactionPredicate, MessagePredicate
 
+# Import the converters
 from .converters import (
     CogOrCommand,
     RuleType,
@@ -32,8 +33,6 @@ GLOBAL = 0
 _OldConfigSchema = Dict[int, Dict[str, Dict[str, Dict[str, Dict[str, List[int]]]]]]
 _NewConfigSchema = Dict[str, Dict[int, Dict[str, Dict[int, bool]]]]
 
-# The strings in the schema are constants and should get extracted, but not translated until
-# runtime.
 translate = _
 _ = lambda s: s
 YAML_SCHEMA = Schema(
@@ -82,31 +81,9 @@ __version__ = "1.0.0"
 class Permissions(commands.Cog):
     """Customize permissions for commands and cogs."""
 
-    # The command groups in this cog should never directly take any configuration actions
-    # These should be delegated to specific commands so that it remains trivial
-    # to prevent the guild owner from ever locking themselves out
-    # see ``Permissions.__permissions_hook`` for more details
-
     def __init__(self, bot: Red):
         super().__init__()
         self.bot = bot
-        # Config Schema:
-        # "COG"
-        # -> Cog names...
-        #   -> Guild IDs...
-        #     -> Model IDs...
-        #       -> True|False
-        #     -> "default"
-        #       -> True|False
-        # "COMMAND"
-        # -> Command names...
-        #   -> Guild IDs...
-        #     -> Model IDs...
-        #       -> True|False
-        #     -> "default"
-        #       -> True|False
-
-        # Note that GLOBAL rules are denoted by an ID of 0.
         self.config = config.Config.get_conf(self, identifier=78631113035100160)
         self.config.register_global(version="")
         self.config.init_custom(COG, 1)
@@ -125,9 +102,6 @@ class Permissions(commands.Cog):
 
         count = 0
         _uid = str(user_id)
-
-        # The dict as returned here as string keys. Above is for comparison,
-        # there's a below recast to int where needed for guild ids
 
         for typename, getter in ((COG, self.bot.get_cog), (COMMAND, self.bot.get_command)):
             obj_type_rules = await self.config.custom(typename).all()
@@ -150,7 +124,6 @@ class Permissions(commands.Cog):
 
                     if _uid in guild_rules:
                         if obj:
-                            # delegate to remove rule here
                             await self._remove_rule(
                                 CogOrCommand(typename, obj.qualified_name, obj),
                                 user_id,
@@ -161,28 +134,11 @@ class Permissions(commands.Cog):
                             await grp.clear_raw(guild_id, user_id)
 
     async def __permissions_hook(self, ctx: commands.Context) -> Optional[bool]:
-        """
-        Purpose of this hook is to prevent guild owner lockouts of permissions specifically
-        without modifying rule behavior in any other case.
-
-        Guild owner is not special cased outside of these configuration commands
-        to allow guild owner to restrict the use of potentially damaging commands
-        such as, but not limited to, cleanup to specific channels.
-
-        Leaving the configuration commands special cased allows guild owners to fix
-        any misconfigurations.
-        """
-
         if ctx.guild:
             if ctx.author == ctx.guild.owner:
-                # the below should contain all commands from this cog
-                # which configure or are useful to the
-                # configuration of guild permissions and should never
-                # have a potential impact on global configuration
-                # as well as the parent groups
                 if ctx.command in (
-                    self.permissions,  # main top level group
-                    self.permissions_acl,  # acl group
+                    self.permissions,
+                    self.permissions_acl,
                     self.permissions_acl_getguild,
                     self.permissions_acl_setguild,
                     self.permissions_acl_updateguild,
@@ -193,9 +149,8 @@ class Permissions(commands.Cog):
                     self.permissions_canrun,
                     self.permissions_explain,
                 ):
-                    return True  # permission rules will be ignored at this case
+                    return True
 
-        # this delegates to permissions rules, do not change to False which would deny
         return None
 
     @commands.hybrid_group()
@@ -205,9 +160,7 @@ class Permissions(commands.Cog):
 
     @permissions.command(name="explain")
     async def permissions_explain(self, ctx: commands.Context):
-        """Explain how permissions works."""
-        # Apologies in advance for the translators out there...
-
+        """Explain how permissions work."""
         message = _(
             "This cog extends the default permission model of the bot. By default, many commands "
             "are restricted based on what the command can do.\n"
@@ -229,7 +182,7 @@ class Permissions(commands.Cog):
         )
 
         embed = discord.Embed(title="Permissions Explanation", description=message, color=discord.Color.blue())
-        await ctx.send(embed=embed)
+        await ctx.send(embed=embed, ephemeral=ctx.interaction is not None)
 
     @permissions.command(name="canrun")
     async def permissions_canrun(
@@ -266,7 +219,7 @@ class Permissions(commands.Cog):
                 else error(_("That user cannot run the specified command."))
             )
         embed = discord.Embed(description=out, color=discord.Color.green() if "success" in out else discord.Color.red())
-        await ctx.send(embed=embed)
+        await ctx.send(embed=embed, ephemeral=ctx.interaction is not None)
 
     @commands.guildowner_or_permissions(administrator=True)
     @commands.hybrid_group(name="acl", aliases=["yaml"])
@@ -291,7 +244,7 @@ class Permissions(commands.Cog):
             """
         )
         embed = discord.Embed(title="YAML Example", description=box(example_yaml, lang="yaml"), color=discord.Color.blue())
-        await ctx.send(embed=embed)
+        await ctx.send(embed=embed, ephemeral=ctx.interaction is not None)
 
     @commands.is_owner()
     @permissions_acl.command(name="setglobal")
@@ -325,10 +278,10 @@ class Permissions(commands.Cog):
         try:
             await ctx.author.send(file=file)
         except discord.Forbidden:
-            await ctx.send(_("I'm not allowed to DM you."))
+            await ctx.send(_("I'm not allowed to DM you."), ephemeral=ctx.interaction is not None)
         else:
             if ctx.guild is not None:
-                await ctx.send(_("I've just sent the file to you via DM."))
+                await ctx.send(_("I've just sent the file to you via DM."), ephemeral=ctx.interaction is not None)
         finally:
             file.close()
 
@@ -341,9 +294,9 @@ class Permissions(commands.Cog):
         try:
             await ctx.author.send(file=file)
         except discord.Forbidden:
-            await ctx.send(_("I'm not allowed to DM you."))
+            await ctx.send(_("I'm not allowed to DM you."), ephemeral=ctx.interaction is not None)
         else:
-            await ctx.send(_("I've just sent the file to you via DM."))
+            await ctx.send(_("I've just sent the file to you via DM."), ephemeral=ctx.interaction is not None)
         finally:
             file.close()
 
@@ -369,13 +322,13 @@ class Permissions(commands.Cog):
         await self._permissions_acl_set(ctx, guild_id=ctx.guild.id, update=True)
 
     @commands.is_owner()
-    @permissions.command(name="addglobalrule", require_var_positional=True)
+    @permissions.command(name="addglobalrule")
     async def permissions_addglobalrule(
         self,
         ctx: commands.Context,
         allow_or_deny: Literal["allow", "deny"],
         cog_or_command: CogOrCommand,
-        *who_or_what: GlobalUniqueObjectFinder,
+        who_or_what: GlobalUniqueObjectFinder,
     ):
         """Add a global rule to a command.
 
@@ -384,30 +337,27 @@ class Permissions(commands.Cog):
         `<cog_or_command>` is the cog or command to add the rule to.
         This is case sensitive.
 
-        `<who_or_what...>` is one or more users, channels or roles the rule is for.
+        `<who_or_what>` is a comma-separated list of users, channels, or roles the rule is for.
         """
         rule = allow_or_deny == "allow"
-        for w in who_or_what:
-            await self._add_rule(
-                rule=rule,
-                cog_or_cmd=cog_or_command,
-                model_id=w.id,
-                guild_id=0,
-            )
+        await self._add_rule(
+            rule=rule,
+            cog_or_cmd=cog_or_command,
+            model_id=who_or_what.id,
+            guild_id=0,
+        )
         embed = discord.Embed(description=_("Rule added."), color=discord.Color.green())
-        await ctx.send(embed=embed)
+        await ctx.send(embed=embed, ephemeral=ctx.interaction is not None)
 
     @commands.guild_only()
     @commands.guildowner_or_permissions(administrator=True)
-    @permissions.command(
-        name="addserverrule", aliases=["addguildrule"], require_var_positional=True
-    )
+    @permissions.command(name="addserverrule", aliases=["addguildrule"])
     async def permissions_addguildrule(
         self,
         ctx: commands.Context,
         allow_or_deny: Literal["allow", "deny"],
         cog_or_command: CogOrCommand,
-        *who_or_what: GuildUniqueObjectFinder,
+        who_or_what: GuildUniqueObjectFinder,
     ):
         """Add a rule to a command in this server.
 
@@ -416,63 +366,58 @@ class Permissions(commands.Cog):
         `<cog_or_command>` is the cog or command to add the rule to.
         This is case sensitive.
 
-        `<who_or_what...>` is one or more users, channels or roles the rule is for.
+        `<who_or_what>` is a comma-separated list of users, channels, or roles the rule is for.
         """
         rule = allow_or_deny == "allow"
-        for w in who_or_what:
-            await self._add_rule(
-                rule=rule,
-                cog_or_cmd=cog_or_command,
-                model_id=w.id,
-                guild_id=ctx.guild.id,
-            )
+        await self._add_rule(
+            rule=rule,
+            cog_or_cmd=cog_or_command,
+            model_id=who_or_what.id,
+            guild_id=ctx.guild.id,
+        )
         embed = discord.Embed(description=_("Rule added."), color=discord.Color.green())
-        await ctx.send(embed=embed)
+        await ctx.send(embed=embed, ephemeral=ctx.interaction is not None)
 
     @commands.is_owner()
-    @permissions.command(name="removeglobalrule", require_var_positional=True)
+    @permissions.command(name="removeglobalrule")
     async def permissions_removeglobalrule(
         self,
         ctx: commands.Context,
         cog_or_command: CogOrCommand,
-        *who_or_what: GlobalUniqueObjectFinder,
+        who_or_what: GlobalUniqueObjectFinder,
     ):
         """Remove a global rule from a command.
 
         `<cog_or_command>` is the cog or command to remove the rule
         from. This is case sensitive.
 
-        `<who_or_what...>` is one or more users, channels or roles the rule is for.
+        `<who_or_what>` is a comma-separated list of users, channels, or roles the rule is for.
         """
-        for w in who_or_what:
-            await self._remove_rule(cog_or_cmd=cog_or_command, model_id=w.id, guild_id=GLOBAL)
+        await self._remove_rule(cog_or_cmd=cog_or_command, model_id=who_or_what.id, guild_id=GLOBAL)
         embed = discord.Embed(description=_("Rule removed."), color=discord.Color.red())
-        await ctx.send(embed=embed)
+        await ctx.send(embed=embed, ephemeral=ctx.interaction is not None)
 
     @commands.guild_only()
     @commands.guildowner_or_permissions(administrator=True)
-    @permissions.command(
-        name="removeserverrule", aliases=["removeguildrule"], require_var_positional=True
-    )
+    @permissions.command(name="removeserverrule", aliases=["removeguildrule"])
     async def permissions_removeguildrule(
         self,
         ctx: commands.Context,
         cog_or_command: CogOrCommand,
-        *who_or_what: GlobalUniqueObjectFinder,
+        who_or_what: GuildUniqueObjectFinder,
     ):
         """Remove a server rule from a command.
 
         `<cog_or_command>` is the cog or command to remove the rule
         from. This is case sensitive.
 
-        `<who_or_what...>` is one or more users, channels or roles the rule is for.
+        `<who_or_what>` is a comma-separated list of users, channels, or roles the rule is for.
         """
-        for w in who_or_what:
-            await self._remove_rule(
-                cog_or_cmd=cog_or_command, model_id=w.id, guild_id=ctx.guild.id
-            )
+        await self._remove_rule(
+            cog_or_cmd=cog_or_command, model_id=who_or_what.id, guild_id=ctx.guild.id
+        )
         embed = discord.Embed(description=_("Rule removed."), color=discord.Color.red())
-        await ctx.send(embed=embed)
+        await ctx.send(embed=embed, ephemeral=ctx.interaction is not None)
 
     @commands.guild_only()
     @commands.guildowner_or_permissions(administrator=True)
@@ -498,7 +443,7 @@ class Permissions(commands.Cog):
             guild_id=ctx.guild.id,
         )
         embed = discord.Embed(description=_("Default set."), color=discord.Color.green())
-        await ctx.send(embed=embed)
+        await ctx.send(embed=embed, ephemeral=ctx.interaction is not None)
 
     @commands.is_owner()
     @permissions.command(name="setdefaultglobalrule")
@@ -521,7 +466,7 @@ class Permissions(commands.Cog):
             rule=rule, cog_or_cmd=cog_or_command, guild_id=GLOBAL
         )
         embed = discord.Embed(description=_("Default set."), color=discord.Color.green())
-        await ctx.send(embed=embed)
+        await ctx.send(embed=embed, ephemeral=ctx.interaction is not None)
 
     @commands.is_owner()
     @permissions.command(name="clearglobalrules")
@@ -708,7 +653,6 @@ class Permissions(commands.Cog):
         """Ask "Are you sure?" and get the response as a bool."""
         if ctx.guild is None or can_user_react_in(ctx.guild.me, ctx.channel):
             msg = await ctx.send(_("Are you sure?"))
-            # noinspection PyAsyncCall
             task = start_adding_reactions(msg, ReactionPredicate.YES_OR_NO_EMOJIS)
             pred = ReactionPredicate.yes_or_no(msg, ctx.author)
             try:
