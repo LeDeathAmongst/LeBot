@@ -34,6 +34,9 @@ from .utils._internal_utils import (
 )
 from .utils.chat_formatting import box as code, error as cross, format_perms_list
 
+import psutil
+import shutil
+
 import rich
 from rich import box
 from rich.table import Table
@@ -79,8 +82,39 @@ def init_events(bot, cli_flags):
         if bot._uptime is not None:
             return
 
+
+    def get_disk_usage():
+        total, used, free = shutil.disk_usage("/")
+        return {
+            "Total": f"{total // (2**30)} GB",
+            "Used": f"{used // (2**30)} GB",
+            "Free": f"{free // (2**30)} GB",
+            "Usage Percentage": f"{used / total * 100:.2f}%"
+        }
+
+    def get_resource_usage():
+        # CPU usage percentage
+        cpu_usage = psutil.cpu_percent(interval=1)
+
+        # Memory usage
+        memory_info = psutil.virtual_memory()
+        memory_usage = {
+            "Total": f"{memory_info.total // (2**20)} MB",
+            "Used": f"{memory_info.used // (2**20)} MB",
+            "Free": f"{memory_info.free // (2**20)} MB",
+            "Usage Percentage": f"{memory_info.percent}%"
+        }
+
+        return {
+            "CPU Usage": f"{cpu_usage}%",
+            "Memory Usage": memory_usage
+        }
+
         bot._uptime = discord.utils.utcnow()
 
+        os_system_info = lambda: f"{platform.system()} {platform.release()}"
+        ip_address = lambda: f"{socket.gethostbyname(socket.gethostname())}"
+        
         guilds = len(bot.guilds)
         users = len(set([m for m in bot.get_all_members()]))
 
@@ -91,6 +125,8 @@ def init_events(bot, cli_flags):
         dpy_version = discord.__version__
         red_creator = "Cog-Creators"
         host_company = "Shadow ~ Hosting"
+
+        unique_users = len({member.id for guild in bot.guilds for member in guild.members})
 
         app_info = await bot.application_info()
         owner_names = app_info.owner.name
@@ -108,11 +144,29 @@ def init_events(bot, cli_flags):
         table_bot_info.add_row("Created By", red_creator)
         table_bot_info.add_row("Hosted On", host_company)
 
+        table_os = Table(show_edge=False, show_header=False, box=box.MINIMAL)
+        table_os.add_row("Operating System", os_system_info)
+        table_os.add_row("IP Address", ip_address)
+
+        disk_usage = get_disk_usage()
+        resource_usage = get_resource_usage()
+
+        table_resource_usage = Table(show_edge=False, show_header=False, box=box.MINIMAL)
+        table_resource_usage.add_column("Resource", justify="left")
+        table_resource_usage.add_column("Total", justify="right")
+        table_resource_usage.add_column("Used", justify="right")
+        table_resource_usage.add_column("Free", justify="right")
+        table_resource_usage.add_column("Usage Percentage", justify="right")
+        table_resource_usage.add_row("CPU", "-", f"{resource_usage['CPU Usage']}", "-", "-")
+        table_resource_usage.add_row("Memory", resource_usage['Memory Usage']['Total'], resource_usage['Memory Usage']['Used'], resource_usage['Memory Usage']['Free'], resource_usage['Memory Usage']['Usage Percentage'])
+        table_resource_usage.add_row("Disk", disk_usage['Total'], disk_usage['Used'], disk_usage['Free'], disk_usage['Usage Percentage'])
+
         table_counts = Table(show_edge=False, show_header=False, box=box.MINIMAL)
         table_counts.add_row("Shards", str(bot.shard_count))
         table_counts.add_row("Servers", str(guilds))
         if bot.intents.members:
-            table_counts.add_row("Unique Users", str(users))
+            table_counts.add_row("Total Users", str(users))
+        table_counts.add_row("Unique Users", unique_users)
 
         outdated_red_message = ""
         rich_outdated_message = ""
@@ -138,6 +192,9 @@ def init_events(bot, cli_flags):
                             table_bot_info,
                             title=gradient_text(bot.user.display_name, ["blue", "red"]),
                         ),
+                        Panel(
+                            table_resource_usage,
+                            title=gradient_text(bot.user.display_name, ["green", "cyan"])
                     ],
                     equal=True,
                     align="center",
