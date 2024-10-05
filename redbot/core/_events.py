@@ -64,6 +64,32 @@ def gradient_text(text, colors):
         gradient.append(char, style=colors[i % len(colors)])
     return gradient
 
+def get_disk_usage():
+    total, used, free = shutil.disk_usage("/")
+    return {
+        "Total": f"{total // (2**30)} GB",
+        "Used": f"{used // (2**30)} GB",
+        "Free": f"{free // (2**30)} GB",
+        "Usage Percentage": f"{used / total * 100:.2f}%"
+    }
+
+def get_resource_usage():
+    # CPU usage percentage
+    cpu_usage = psutil.cpu_percent(interval=1)
+    # Memory usage
+    memory_info = psutil.virtual_memory()
+    memory_usage = {
+        "Total": f"{memory_info.total // (2**20)} MB",
+        "Used": f"{memory_info.used // (2**20)} MB",
+        "Free": f"{memory_info.free // (2**20)} MB",
+        "Usage Percentage": f"{memory_info.percent}%"
+    }
+
+    return {
+        "CPU Usage": f"{cpu_usage}%",
+        "Memory Usage": memory_usage
+    }
+
 def init_events(bot, cli_flags):
     @bot.event
     async def on_connect():
@@ -81,34 +107,6 @@ def init_events(bot, cli_flags):
     async def _on_ready():
         if bot._uptime is not None:
             return
-
-
-    def get_disk_usage():
-        total, used, free = shutil.disk_usage("/")
-        return {
-            "Total": f"{total // (2**30)} GB",
-            "Used": f"{used // (2**30)} GB",
-            "Free": f"{free // (2**30)} GB",
-            "Usage Percentage": f"{used / total * 100:.2f}%"
-        }
-
-    def get_resource_usage():
-        # CPU usage percentage
-        cpu_usage = psutil.cpu_percent(interval=1)
-
-        # Memory usage
-        memory_info = psutil.virtual_memory()
-        memory_usage = {
-            "Total": f"{memory_info.total // (2**20)} MB",
-            "Used": f"{memory_info.used // (2**20)} MB",
-            "Free": f"{memory_info.free // (2**20)} MB",
-            "Usage Percentage": f"{memory_info.percent}%"
-        }
-
-        return {
-            "CPU Usage": f"{cpu_usage}%",
-            "Memory Usage": memory_usage
-        }
 
         bot._uptime = discord.utils.utcnow()
 
