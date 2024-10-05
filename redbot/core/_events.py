@@ -195,6 +195,7 @@ def init_events(bot, cli_flags):
                         Panel(
                             table_resource_usage,
                             title=gradient_text(bot.user.display_name, ["green", "cyan"])
+                        ),
                     ],
                     equal=True,
                     align="center",
