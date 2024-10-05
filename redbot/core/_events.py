@@ -143,8 +143,10 @@ def init_events(bot, cli_flags):
         table_bot_info.add_row("Hosted On", host_company)
 
         table_os = Table(show_edge=False, show_header=False, box=box.MINIMAL)
-        table_os.add_row("Operating System", os_system_info)
-        table_os.add_row("IP Address", ip_address)
+        table_os.add_column("Description")
+        table_os.add_column("Value")
+        table_os.add_row("Operating System", os_system_info())
+        table_os.add_row("IP Address", ip_address())
 
         disk_usage = get_disk_usage()
         resource_usage = get_resource_usage()
@@ -194,6 +196,10 @@ def init_events(bot, cli_flags):
                             table_resource_usage,
                             title=gradient_text(bot.user.display_name, ["green", "cyan"])
                         ),
+                        Panel(
+                            table_os,
+                            title=gradient_text(bot.user.display_name, ["green", "red"])
+                        )
                     ],
                     equal=True,
                     align="center",
