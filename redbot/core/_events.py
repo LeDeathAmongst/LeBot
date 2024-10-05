@@ -149,9 +149,6 @@ def init_events(bot, cli_flags):
             return
 
         bot._uptime = discord.utils.utcnow()
-
-        os_system_info = lambda: f"{platform.system()} {platform.release()}"
-        ip_address = lambda: f"{socket.gethostbyname(socket.gethostname())}"
         
         guilds = len(bot.guilds)
         users = len(set([m for m in bot.get_all_members()]))
@@ -181,10 +178,6 @@ def init_events(bot, cli_flags):
         table_bot_info.add_row("Developer", owner_names)
         table_bot_info.add_row("Created By", red_creator)
         table_bot_info.add_row("Hosted On", host_company)
-
-        table_os = Table(show_edge=False, show_header=False, box=box.MINIMAL)
-        table_os.add_row("Operating System", os_system_info())
-        table_os.add_row("IP Address", ip_address())
 
         disk_usage = get_disk_usage()
         resource_usage = get_resource_usage()
@@ -235,10 +228,6 @@ def init_events(bot, cli_flags):
                         ),
                         Panel(
                             table_resource_usage,
-                            title = gradient_text(bot.user.display_name, get_holiday_colors()),
-                        ),
-                        Panel(
-                            table_os,
                             title = gradient_text(bot.user.display_name, get_holiday_colors()),
                         )
                     ],
