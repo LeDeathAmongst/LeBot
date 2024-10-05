@@ -48,11 +48,23 @@ from rich.text import Text
 log = logging.getLogger("red")
 
 INTRO = r"""
- ____    _                     __   _
-/ ___|  | |_    __ _   _ __   / _| (_)  _ __    ___
-\___ \  | __|  / _` | | '__| | |_  | | | '__|  / _ \
- ___) | | |_  | (_| | | |    |  _| | | | |    |  __/
-|____/   \__|  \__,_| |_|    |_|   |_| |_|     \___|
+
+       ...              s                                         .                                     ..                           ...              s                             
+   .x888888hx    :     :8                               oec :    @88>                             . uW8"        ..               .x888888hx    :     :8                             
+  d88888888888hxx     .88                   .u    .    @88888    %8P      .u    .                 `t888        @L               d88888888888hxx     .88                   .u    .   
+ 8" ... `"*8888%`    :888ooo       u      .d88B :@8c   8"*88%     .     .d88B :@8c       .u        8888   .   9888i   .dL      8" ... `"*8888%`    :888ooo       u      .d88B :@8c  
+!  "   ` .xnxx.    -*8888888    us888u.  ="8888f8888r  8b.      .@88u  ="8888f8888r   ud8888.      9888.z88N  `Y888k:*888.    !  "   ` .xnxx.    -*8888888    us888u.  ="8888f8888r 
+X X   .H8888888%:    8888    .@88 "8888"   4888>'88"  u888888> ''888E`   4888>'88"  :888'8888.     9888  888E   888E  888I    X X   .H8888888%:    8888    .@88 "8888"   4888>'88"  
+X 'hn8888888*"   >   8888    9888  9888    4888> '     8888R     888E    4888> '    d888 '88%"     9888  888E   888E  888I    X 'hn8888888*"   >   8888    9888  9888    4888> '    
+X: `*88888%`     !   8888    9888  9888    4888>       8888P     888E    4888>      8888.+"        9888  888E   888E  888I    X: `*88888%`     !   8888    9888  9888    4888>      
+'8h.. ``     ..x8>  .8888Lu= 9888  9888   .d888L .+    *888>     888E   .d888L .+   8888L          9888  888E   888E  888I    '8h.. ``     ..x8>  .8888Lu= 9888  9888   .d888L .+   
+ `88888888888888f   ^%888*   9888  9888   ^"8888*"     4888      888&   ^"8888*"    '8888c. .+    .8888  888"  x888N><888'     `88888888888888f   ^%888*   9888  9888   ^"8888*"    
+  '%8888888888*"      'Y"    "888*""888"     "Y"       '888      R888"     "Y"       "88888%       `%888*%"     "88"  888       '%8888888888*"      'Y"    "888*""888"     "Y"      
+     ^"****""`                ^Y"   ^Y'                 88R       ""                   "YP'           "`              88F          ^"****""`                ^Y"   ^Y'               
+                                                        88>                                                          98"                                                            
+                                                        48                                                         ./"                                                              
+                                                        '8                                                        ~`                                                                
+
 """
 
 _ = Translator(__name__, __file__)
@@ -76,18 +88,17 @@ def get_holiday_colors():
         "New Year's Day": ["gold", "silver", "black", "white"]
     }
 
-    # Define date ranges for each holiday with a buffer of 3 days before and after
-    if datetime(today.year, 12, 1).date() - timedelta(days=3) <= today <= datetime(today.year, 12, 26).date() + timedelta(days=3):
+    if datetime(today.year, 12, 20).date() <= today <= datetime(today.year, 12, 28).date():
         return holiday_colors["Christmas"]
-    elif datetime(today.year, 10, 1).date() - timedelta(days=3) <= today <= datetime(today.year, 10, 31).date() + timedelta(days=3):
+    elif datetime(today.year, 10, 26).date() <= today <= datetime(today.year, 11, 5).date():
         return holiday_colors["Halloween"]
-    elif datetime(today.year, 11, 1).date() - timedelta(days=3) <= today <= datetime(today.year, 11, 30).date() + timedelta(days=3):
+    elif datetime(today.year, 11, 20).date() <= today <= datetime(today.year, 11, 30).date():
         return holiday_colors["Thanksgiving"]
-    elif datetime(today.year, 2, 1).date() - timedelta(days=3) <= today <= datetime(today.year, 2, 14).date() + timedelta(days=3):
+    elif datetime(today.year, 2, 10).date() <= today <= datetime(today.year, 2, 17).date():
         return holiday_colors["Valentine's Day"]
-    elif datetime(today.year, 3, 1).date() - timedelta(days=3) <= today <= datetime(today.year, 3, 17).date() + timedelta(days=3):
+    elif datetime(today.year, 3, 14).date() <= today <= datetime(today.year, 3, 22).date():
         return holiday_colors["St. Patrick's Day"]
-    elif datetime(today.year, 12, 31).date() - timedelta(days=3) <= today <= datetime(today.year, 1, 1).date() + timedelta(days=3):
+    elif datetime(today.year, 12, 28).date() <= today <= datetime(today.year + 1, 1, 4).date():
         return holiday_colors["New Year's Day"]
 
     # Default colors if no holiday is active
