@@ -65,6 +65,34 @@ def gradient_text(text, colors):
         gradient.append(char, style=colors[i % len(colors)])
     return gradient
 
+def get_holiday_colors():
+    today = datetime.now().date()
+    holiday_colors = {
+        "Christmas": ["red", "green", "gold", "white"],
+        "Halloween": ["orange", "black", "purple", "green"],
+        "Thanksgiving": ["orange", "brown", "yellow", "red"],
+        "Valentine's Day": ["red", "pink", "white", "purple"],
+        "St. Patrick's Day": ["green", "gold", "white", "orange"],
+        "New Year's Day": ["gold", "silver", "black", "white"]
+    }
+
+    # Define date ranges for each holiday with a buffer of 3 days before and after
+    if datetime(today.year, 12, 1).date() - timedelta(days=3) <= today <= datetime(today.year, 12, 26).date() + timedelta(days=3):
+        return holiday_colors["Christmas"]
+    elif datetime(today.year, 10, 1).date() - timedelta(days=3) <= today <= datetime(today.year, 10, 31).date() + timedelta(days=3):
+        return holiday_colors["Halloween"]
+    elif datetime(today.year, 11, 1).date() - timedelta(days=3) <= today <= datetime(today.year, 11, 30).date() + timedelta(days=3):
+        return holiday_colors["Thanksgiving"]
+    elif datetime(today.year, 2, 1).date() - timedelta(days=3) <= today <= datetime(today.year, 2, 14).date() + timedelta(days=3):
+        return holiday_colors["Valentine's Day"]
+    elif datetime(today.year, 3, 1).date() - timedelta(days=3) <= today <= datetime(today.year, 3, 17).date() + timedelta(days=3):
+        return holiday_colors["St. Patrick's Day"]
+    elif datetime(today.year, 12, 31).date() - timedelta(days=3) <= today <= datetime(today.year, 1, 1).date() + timedelta(days=3):
+        return holiday_colors["New Year's Day"]
+
+    # Default colors if no holiday is active
+    return ["blue", "white", "gray"]
+
 def get_disk_usage():
     total, used, free = shutil.disk_usage("/")
     return {
@@ -144,8 +172,6 @@ def init_events(bot, cli_flags):
         table_bot_info.add_row("Hosted On", host_company)
 
         table_os = Table(show_edge=False, show_header=False, box=box.MINIMAL)
-        table_os.add_column("Description")
-        table_os.add_column("Value")
         table_os.add_row("Operating System", os_system_info())
         table_os.add_row("IP Address", ip_address())
 
@@ -186,20 +212,23 @@ def init_events(bot, cli_flags):
                     [
                         Panel(
                             table_general_info,
-                            title=gradient_text(bot.user.display_name, ["blue", "magenta"]),
+                            title = gradient_text(bot.user.display_name, get_holiday_colors()),
                         ),
-                        Panel(table_counts),
+                        Panel(
+                            table_counts,
+                            title = gradient_text(bot.user.display_name, get_holiday_colors()),
+                        ),
                         Panel(
                             table_bot_info,
-                            title=gradient_text(bot.user.display_name, ["blue", "red"]),
+                            title = gradient_text(bot.user.display_name, get_holiday_colors()),
                         ),
                         Panel(
                             table_resource_usage,
-                            title=gradient_text(bot.user.display_name, ["green", "cyan"])
+                            title = gradient_text(bot.user.display_name, get_holiday_colors()),
                         ),
                         Panel(
                             table_os,
-                            title=gradient_text(bot.user.display_name, ["green", "red"])
+                            title = gradient_text(bot.user.display_name, get_holiday_colors()),
                         )
                     ],
                     equal=True,
