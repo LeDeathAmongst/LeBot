@@ -167,7 +167,7 @@ def init_events(bot, cli_flags):
         table_counts.add_row("Servers", str(guilds))
         if bot.intents.members:
             table_counts.add_row("Total Users", str(users))
-        table_counts.add_row("Unique Users", unique_users)
+        table_counts.add_row("Unique Users", str(unique_users))
 
         outdated_red_message = ""
         rich_outdated_message = ""
