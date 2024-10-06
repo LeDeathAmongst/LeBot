@@ -465,7 +465,7 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
         dpy_version = "[`{}`]({})".format(discord.__version__, dpy_repo)
         red_version = "[`{}`]({})".format(__version__, bot_repo)
         dot = str(self.bot.get_emoji(1279795628335042600))
-        shiro = str(self.bot.get_emoji(1292312705692074106)
+        shiro = str(self.bot.get_emoji(1292312705692074106))
         bot_name = ctx.bot.user.name
         embed = discord.Embed(title="Various Versions")
         embed.add_field(
