@@ -5987,12 +5987,14 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
 
     # Removing this command from forks is a violation of the GPLv3 under which it is licensed.
     # Otherwise interfering with the ability for this command to be accessible is also a violation.
-    @commands.cooldown(1, 180, lambda ctx: (ctx.message.channel.id, ctx.message.author.id))
+    @commands.is_owner()
+    @commands.cooldown(1, 150000000, lambda ctx: (ctx.message.channel.id, ctx.message.author.id))
     @commands.command(
         cls=commands.commands._AlwaysAvailableCommand,
         name="licenseinfo",
         aliases=["licenceinfo"],
         i18n=_,
+        hidden=True
     )
     async def license_info_command(self, ctx):
         """
