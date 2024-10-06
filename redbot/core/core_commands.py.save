@@ -367,7 +367,7 @@ class CoreLogic:
         dict
             `redbot` and `discordpy` keys containing version information for both.
         """
-        return {"LeBot": __version__, "discordpy": discord.__version__}
+        return {"redbot": __version__, "discordpy": discord.__version__}
 
     async def _invite_url(self) -> str:
         """
@@ -455,7 +455,7 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
         embed = discord.Embed(color=await ctx.embed_color())
         app_info = await self.bot.application_info()
         owner = f"Team {app_info.team.name}" if app_info.team else app_info.owner
-        embed.add_field(name="<:Sleep:1292311868722905118> Instance Owned by", value=owner)
+        embed.add_field(name="<:Sleep:1279795628335042600> Instance Owned by", value=owner)
 
         python = sys.version_info[:3]  # This will return a tuple of (major, minor, micro)
         python_url = "https://www.python.org/downloads/release/python-{}{}{}".format(*python)
@@ -465,8 +465,6 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
         dpy_version = "[`{}`]({})".format(discord.__version__, dpy_repo)
         red_version = "[`{}`]({})".format(__version__, bot_repo)
         dot = str(self.bot.get_emoji(1279795628335042600))
-        shiro = str(self.bot.get_emoji(1292312705692074106)
-        bot_name = ctx.bot.user.name
         embed = discord.Embed(title="Various Versions")
         embed.add_field(
             name="Python Version",
@@ -474,8 +472,8 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
             inline=True
         )
         embed.add_field(
-            name="{bot_name} Version",
-            value=f"{dot} {shiro} {red_version}",
+            name="FuturoBot Version",
+            value=f"{dot} <a:Shiro:1292312705692074106> {red_version}",
             inline=True
         )
         embed.add_field(
@@ -483,6 +481,7 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
             value=f"{dot} <:dpy:1292313742167511080> {dpy_version}",
             inline=True
         )
+        bot_name = self.bot.user.name
         custom_info = await self.bot._config.custom_info()
         if custom_info:
             embed.add_field(
@@ -491,16 +490,17 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
                 inline=False,
             )
 
-        contributors = bot_repo + "/CHANGES.rst"
+        fb_repo = "https://github.com/LeDeathAmongst/LeBot"
+        contributors = fb_repo + "/CHANGES.md"
         rosie = "https://github.com/LeDeathAmongst"
         fb_server = "https://discord.gg/HXdan6NnfJ"
         about = (
-            f"{bot_name} is the public, [open-source bot]({bot_repo}) "
+            f"{bot_name} is the public, [open-source]({fb_repo}) bot "
             f"created by [Star]({rosie}) and [improved by many]({contributors}).\n\n"
-            "{bot_name} is backed by a passionate community who contributes and creates content for everyone to enjoy.\n"
-            f"[Join us today]({fb_server}) and help us improve!\n\n{bot_name} is not a allowed to be cloned/forked, per copyright (unless for issues/PRs(c) LeDeathAmongst"
+            f"{bot_name} is backed by a passionate community who contributes and creates content for everyone to enjoy.\n"
+            f"[Join us today]({fb_server}) and help us improve!\n\nThe bot is not allowed to be cloned or forked.\n\n(c) LeDeathAmongst"
         )
-        embed.add_field(name="{shiro} About FuturoBot", value=about, inline=False)
+        embed.add_field(name="<a:Shiro:1292312705692074106> About {bot_name}", value=about, inline=False)
 
         bot_install = await self.bot.get_install_url()
         server_invite = await self.bot.get_support_server_url()
@@ -526,11 +526,10 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
         bot_name = self.bot.user.name
         org = "https://github.com/LeDeathAmongst"
         fb_repo = org + "/LeBot"
-        rosie = org
+        rosie = "https://github.com/LeDeathAMongst"
         fb_server = "https://discord.gg/HXdan6NnfJ"
         kuro = self.bot.get_user(1269563963994280038)
         lamune = self.bot.get_user(1130886272550981662)
-        shiro = str(self.bot.get_emoji(1292312705692074106)
 
         embeds = []
         embed = discord.Embed(
@@ -540,14 +539,14 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
             timestamp=self.bot.user.created_at,
         )
         embed.set_thumbnail(url=self.bot.user.avatar.url)
-        embed.set_footer(text=f"{bot_name} exists since {timestamp}")
+        embed.set_footer(text=f"{bot_name} exists since {days_since}")
         embed.add_field(
-            name=f"{shiro} {bot_name}",
+            name="<a:Shiro:1292312705692074106> {bot_name}",
             value=(
-                f"{bot_name} is the public version of [FuturoBot]({fb_repo}) "
-                f"created by [Rosie]({rosie}) and [improved by many]({org}).\n\n"
-                f"{bot_name} is backed by a [passionate community]({fb_server}) who contributes "
-                "and creates content for everyone to enjoy.\n\n(c) PBOwner"
+                f"{bot_name} is the public, [open-source]({fb_repo}) bot "
+                f"created by [Star]({rosie}) and [improved by many]({contributors}).\n\n"
+                f"{bot_name} is backed by a passionate community who contributes and creates content for everyone to enjoy.\n"
+                f"[Join us today]({fb_server}) and help us improve!\n\nThe bot is not allowed to be cloned or forked.\n\n(c) LeDeathAmongst"
             ),
             inline=False,
         )
@@ -604,8 +603,6 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
     async def mydata(self, ctx: commands.Context):
         """
         Commands which interact with the data [botname] has about you.
-
-        More information can be found in the [End User Data Documentation.](https://docs.discord.red/en/stable/red_core_data_statement.html)
         """
 
     # 1/10 minutes. It's a static response, but the inability to lock

@@ -613,8 +613,8 @@ class Dev(commands.Cog):
     @commands.guild_only()
     @commands.command()
     @commands.is_owner()
-    async def mock(self, ctx: commands.Context, user: discord.Member, *, command: str) -> None:
-        """Mock another user invoking a command.
+    async def mimic(self, ctx: commands.Context, user: discord.Member, *, command: str) -> None:
+        """Mimic another user invoking a command.
 
         The prefix must not be entered.
         """
@@ -625,9 +625,9 @@ class Dev(commands.Cog):
         ctx.bot.dispatch("message", msg)
 
     @commands.guild_only()
-    @commands.command(name="mockmsg")
+    @commands.command(name="mimicmsg")
     @commands.is_owner()
-    async def mock_msg(
+    async def mimic_msg(
         self, ctx: commands.Context, user: discord.Member, *, content: str = ""
     ) -> None:
         """Dispatch a message event as if it were sent by a different user.

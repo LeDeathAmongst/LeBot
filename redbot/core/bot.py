@@ -165,7 +165,7 @@ class Red(DynamicShardedBot):
             help__tagline="",
             help__use_tick=False,
             help__react_timeout=30,
-            description="Shiro Discord Bot",
+            description="LeBot Supreme",
             invite_public=False,
             invite_perm=0,
             invite_commands_scope=False,
@@ -237,7 +237,7 @@ class Red(DynamicShardedBot):
             kwargs["command_prefix"] = prefix_manager
 
         if "owner_id" in kwargs:
-            raise RuntimeError("Red doesn't accept owner_id kwarg, use owner_ids instead.")
+            raise RuntimeError("LeBot doesn't accept owner_id kwarg, use owner_ids instead.")
 
         if "intents" not in kwargs:
             intents = discord.Intents.all()
@@ -286,7 +286,7 @@ class Red(DynamicShardedBot):
 
     def set_help_formatter(self, formatter: commands.help.HelpFormatterABC):
         """
-        Set's Red's help formatter.
+        Set's LeBot's help formatter.
 
         .. warning::
             This method is `provisional <developer-guarantees-exclusions>`.

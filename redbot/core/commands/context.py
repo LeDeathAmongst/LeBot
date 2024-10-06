@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     from .commands import Command
     from ..bot import Red
 
-TICK = "<a:Tick:1279795666507272225>"
+TICK = discord.PartialEmoji(name="Tick", animated=True, id=1279795666507272225)
 
 __all__ = ["Context", "GuildContext", "DMContext"]
 

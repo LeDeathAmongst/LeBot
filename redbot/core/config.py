@@ -30,7 +30,7 @@ __all__ = (
     "Config",
 )
 
-log = logging.getLogger("red.config")
+log = logging.getLogger("LeBot.config")
 
 _T = TypeVar("_T")
 
