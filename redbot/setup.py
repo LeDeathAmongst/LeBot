@@ -25,7 +25,7 @@ from redbot.core._cli import ExitCodes
 from redbot.core.data_manager import appdir, config_dir, config_file
 from redbot.core._drivers import BackendType, IdentifierData
 
-conversion_log = logging.getLogger("red.converter")
+conversion_log = logging.getLogger("LeBot.converter")
 
 try:
     config_dir.mkdir(parents=True, exist_ok=True)

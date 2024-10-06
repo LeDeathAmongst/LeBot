@@ -3,10 +3,10 @@ requires = ["setuptools>=64", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "Red-DiscordBot"
-description = "A highly customisable Discord bot"
+name = "LeBot"
+description = "Best Discord bot"
 readme = "README.md"
-authors = [{ name = "Cog Creators" }]
+authors = [{ name = "LeDeathAmongst" }]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Framework :: AsyncIO",
@@ -27,13 +27,7 @@ classifiers = [
 dynamic = ["version", "requires-python", "dependencies", "optional-dependencies"]
 
 [project.urls]
-"Homepage" = "https://github.com/Cog-Creators/Red-DiscordBot"
-"Discord Server" = "https://discord.gg/red"
-"Documentation" = "https://docs.discord.red"
-"Donate on Patreon" = "https://www.patreon.com/Red_Devs"
-"Issue Tracker" = "https://github.com/Cog-Creators/Red-DiscordBot/issues"
-"Source Code" = "https://github.com/Cog-Creators/Red-DiscordBot"
-"Changelog" = "https://docs.discord.red/en/stable/changelog.html"
+"Homepage" = "https://github.com/LeDeathAmongst/LeBot"
 
 [project.scripts]
 redbot = "redbot.__main__:main"

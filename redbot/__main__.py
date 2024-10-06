@@ -32,7 +32,7 @@ from redbot.core._debuginfo import DebugInfo
 from redbot.core._sharedlibdeprecation import SharedLibImportWarner
 
 
-log = logging.getLogger("red.main")
+log = logging.getLogger("LeBot.main")
 
 #
 #               Red - Discord Bot v3

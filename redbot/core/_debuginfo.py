@@ -59,7 +59,7 @@ class DebugInfo:
         return self.bot is not None and self.bot.is_ready()
 
     async def get_cli_text(self) -> str:
-        parts = ["\x1b[31m# Debug Info for Red:\x1b[0m"]
+        parts = ["\x1b[31m# Debug Info for LeBot:\x1b[0m"]
         for section in (
             self._get_system_metadata_section(),
             self._get_os_variables_section(),
@@ -71,7 +71,7 @@ class DebugInfo:
         return "\n".join(parts)
 
     async def get_command_text(self) -> str:
-        parts = [box("# Debug Info for Red:", lang="md")]
+        parts = [box("# Debug Info for LeBot:", lang="md")]
         for section in (
             self._get_system_metadata_section(),
             self._get_os_variables_section(),
@@ -124,7 +124,7 @@ class DebugInfo:
             f"Python version: {pyver}\n"
             f"Pip version: {pipver}\n"
         )
-        resp_red_metadata = f"Red version: {redver}\nDiscord.py version: {dpy_version}"
+        resp_red_metadata = f"LeBot version: {redver}\nDiscord.py version: {dpy_version}"
         return DebugInfoSection(
             "OS variables",
             resp_os,
@@ -136,7 +136,7 @@ class DebugInfo:
         instance_name = data_manager.instance_name()
         if instance_name is None:
             return DebugInfoSection(
-                "Red variables",
+                "LeBot variables",
                 f"Metadata file: {data_manager.config_file}",
             )
 
@@ -193,6 +193,6 @@ class DebugInfo:
         parts.append(f"Metadata file: {data_manager.config_file}")
 
         return DebugInfoSection(
-            "Red variables",
+            "LeBot variables",
             "\n".join(parts),
         )

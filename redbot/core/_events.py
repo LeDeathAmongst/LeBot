@@ -158,7 +158,7 @@ def init_events(bot, cli_flags):
         prefixes = cli_flags.prefix or (await bot._config.prefix())
         lang = await bot._config.locale()
         dpy_version = discord.__version__
-        red_creator = "Cog-Creators"
+        red_creator = "Star (a.k.a. Rosie)"
         host_company = "Shadow ~ Hosting"
 
         unique_users = len({member.id for guild in bot.guilds for member in guild.members})
@@ -256,7 +256,7 @@ def init_events(bot, cli_flags):
             # We generally shouldn't care if the client supports it or not as Rich deals with it.
         if not guilds:
             rich_console.print(
-                f"Looking for a quick guide on setting up Red? Checkout {Text('https://start.discord.red', style='link https://start.discord.red}')}"
+                f"Looking for a quick guide on setting up LeBot? Contact death_waffle on Discord for assistance!"
             )
         if rich_outdated_message:
             rich_console.print(rich_outdated_message)
@@ -457,7 +457,7 @@ def init_events(bot, cli_flags):
                 embed.title = "Master... Your command returned an error!"
                 embed.description = description
                 embed.set_footer(
-                    text=f"Please use {ctx.prefix}traceback for the detailed cause of this error."
+                    text=f"Please use {ctx.prefix}tb for the detailed cause of this error."
                 )
                 view = None
             else:
@@ -504,7 +504,7 @@ def init_events(bot, cli_flags):
             else:
                 await ctx.send(await format_fuzzy_results(ctx, fuzzy_commands, embed=False))
         elif isinstance(error, commands.BotMissingPermissions):
-            embed = discord.Embed(title="Missing Permissions", color=discord.Color.red())
+            embed = discord.Embed(title="I can't do that!", color=discord.Color.red())
             if bin(error.missing.value).count("1") == 1:  # Only missing a permission
                 embed.description = _(
                     "I require the {permission} permission to run that command."
@@ -521,19 +521,19 @@ def init_events(bot, cli_flags):
             if error.message:
                 await ctx.send(error.message)
         elif isinstance(error, commands.NoPrivateMessage):
-            message = cross(_("That command is not available in DMs."))
+            message = cross(_("That command is not available in DMs. Please try in a server!"))
             try:
                 await ctx.reply(message, mention_author=False)
             except discord.HTTPException:
                 await ctx.send(message)
         elif isinstance(error, commands.PrivateMessageOnly):
-            message = cross(_("That command is only available in DMs."))
+            message = cross(_("That command is only available in DMs. Please use it in my dms."))
             try:
                 await ctx.reply(message, mention_author=False)
             except discord.HTTPException:
                 await ctx.send(message)
         elif isinstance(error, commands.NSFWChannelRequired):
-            m = cross(_("That command is only available in NSFW channels."))
+            m = cross(_("That command is only available in NSFW channels. Tsk tsk tsk."))
             try:
                 await ctx.reply(m, mention_author=False)
             except discord.HTTPException:
@@ -549,7 +549,7 @@ def init_events(bot, cli_flags):
             delay = discord.utils.format_dt(
                 datetime.utcnow() + timedelta(seconds=error.retry_after), "R"
             )
-            msg = _("This command is on cooldown. Try again {delay}.").format(delay=delay)
+            msg = _("This command is on cooldown. You must wait. \nTry again {delay}.").format(delay=delay)
             embed = discord.Embed(
                 title=_("Command Cooldown"), description=msg, color=await ctx.embed_color()
             )

@@ -74,7 +74,7 @@ _DEFAULT_USER = _DEFAULT_MEMBER
 
 _config: Config = None
 
-log = logging.getLogger("red.core.bank")
+log = logging.getLogger("LeBot.core.bank")
 
 _data_deletion_lock = asyncio.Lock()
 

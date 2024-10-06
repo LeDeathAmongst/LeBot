@@ -12,7 +12,7 @@ from redbot.core.utils.predicates import MessagePredicate
 from .announcer import Announcer
 from .converters import SelfRole
 
-log = logging.getLogger("red.admin")
+log = logging.getLogger("LeBot.admin")
 
 T_ = Translator("Admin", __file__)
 
