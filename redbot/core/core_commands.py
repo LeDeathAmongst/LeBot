@@ -20,7 +20,7 @@ from pathlib import Path
 from collections import defaultdict
 from redbot.core import app_commands, data_manager
 from redbot.core.utils.menus import menu
-from redbot.core.utils.views import SetApiView
+from redbot.core.utils.views import _StopButton, InviteView, SetApiView, View
 from redbot.core.commands import GuildConverter, RawUserIdConverter
 from string import ascii_letters, digits
 from typing import (
@@ -1480,42 +1480,22 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
             else _("Embeds are now disabled for you in DMs.")
         )
 
-    @commands.command()
+    @commands.command(aliases=["tb"])
     @commands.is_owner()
-    async def traceback(self, ctx: commands.Context, public: bool = False):
-        """Sends to the owner the last command exception that has occurred.
-
-        If public (yes is specified), it will be sent to the chat instead.
-
-        Warning: Sending the traceback publicly can accidentally reveal sensitive information about your computer or configuration.
-
-        **Examples:**
-        - `[p]traceback` - Sends the traceback to your DMs.
-        - `[p]traceback True` - Sends the last traceback in the current context.
-
-        **Arguments:**
-        - `[public]` - Whether to send the traceback to the current context. Leave blank to send to your DMs.
-        """
-        channel = ctx.channel if public else ctx.author
-
-        if self.bot._last_exception:
-            try:
-                await self.bot.send_interactive(
-                    channel,
-                    pagify(self.bot._last_exception, shorten_by=10),
-                    user=ctx.author,
-                    box_lang="py",
-                )
-            except discord.HTTPException:
-                await ctx.channel.send(
-                    "I couldn't send the traceback message to you in DM. "
-                    "Either you blocked me or you disabled DMs in this server."
-                )
-                return
-            if not public:
-                await ctx.tick()
-        else:
+    async def traceback(self, ctx: commands.Context):
+        """Sends the last command exception that has occurred."""
+        exception = self.bot._last_exception
+        if not exception:
             await ctx.send(_("No exception has occurred yet."))
+            return
+
+        view = View()
+        view.add_item(_StopButton())
+
+        if len(exception) > 1990:  # Limit is 2000 (- 10 for py code blocks)
+            await view.start(ctx, file=text_to_file(exception, filename="exception.py"))
+        else:
+            await view.start(ctx, box(exception, lang="py"))
 
     @commands.command()
     @commands.check(CoreLogic._can_get_invite_url)
