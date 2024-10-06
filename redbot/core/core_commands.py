@@ -465,8 +465,8 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
         python_version = "[`{}.{}.{}`]({})".format(*python, python_url)
         dpy_version = "[`{}`]({})".format(discord.__version__, dpy_repo)
         red_version = "[`{}`]({})".format(__version__, bot_repo)
-        dot = str(self.bot.get_emoji(1279795628335042600))
-        shiro = str(self.bot.get_emoji(1292312705692074106))
+        dot = discord.PartialEmoji(name="dot", animated=False, id=1279795628335042600)
+        shiro = discord.PartialEmoji(name="Shiro", animated=True, id=1292312705692074106)
         bot_name = self.bot.user.name
 
         embed = discord.Embed(title="Various Versions")
@@ -533,7 +533,8 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
         fb_server = "https://discord.gg/HXdan6NnfJ"
         kuro = self.bot.get_user(1269563963994280038)
         lamune = self.bot.get_user(1130886272550981662)
-        shiro = str(self.bot.get_emoji(1292312705692074106))
+        dot = discord.PartialEmoji(name="dot", animated=False, id=1279795628335042600)
+        shiro = discord.PartialEmoji(name="Shiro", animated=True, id=1292312705692074106)
         bot_repo = "https://github.com/LeDeathAmongst/LeBot"
         contributors = bot_repo + "/CHANGES.rst"
         timestamp=self.bot.user.created_at
