@@ -466,7 +466,8 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
         red_version = "[`{}`]({})".format(__version__, bot_repo)
         dot = str(self.bot.get_emoji(1279795628335042600))
         shiro = str(self.bot.get_emoji(1292312705692074106))
-        bot_name = ctx.bot.user.name
+        bot_name = self.bot.user.name
+
         embed = discord.Embed(title="Various Versions")
         embed.add_field(
             name="Python Version",
@@ -474,7 +475,7 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
             inline=True
         )
         embed.add_field(
-            name="{bot_name} Version",
+            name=f"{bot_name} Version",
             value=f"{dot} {shiro} {red_version}",
             inline=True
         )
@@ -483,7 +484,8 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
             value=f"{dot} <:dpy:1292313742167511080> {dpy_version}",
             inline=True
         )
-        custom_info = await self.bot._config.custom_info()
+
+        custom_info = await self.bot._config.custom_info() if hasattr(self.bot, '_config') else None
         if custom_info:
             embed.add_field(
                 name=f"<a:ShiroHeart:1292312320684327042> About {bot_name}",
@@ -497,10 +499,10 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
         about = (
             f"{bot_name} is the public, [open-source bot]({bot_repo}) "
             f"created by [Star]({rosie}) and [improved by many]({contributors}).\n\n"
-            "{bot_name} is backed by a passionate community who contributes and creates content for everyone to enjoy.\n"
+            f"{bot_name} is backed by a passionate community who contributes and creates content for everyone to enjoy.\n"
             f"[Join us today]({fb_server}) and help us improve!\n\n{bot_name} is not a allowed to be cloned/forked, per copyright (unless for issues/PRs(c) LeDeathAmongst"
         )
-        embed.add_field(name="{shiro} About FuturoBot", value=about, inline=False)
+        embed.add_field(name=f"{shiro} About {bot_name}", value=about, inline=False)
 
         bot_install = await self.bot.get_install_url()
         server_invite = await self.bot.get_support_server_url()
@@ -531,23 +533,23 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
         kuro = self.bot.get_user(1269563963994280038)
         lamune = self.bot.get_user(1130886272550981662)
         shiro = str(self.bot.get_emoji(1292312705692074106))
+        timestamp=self.bot.user.created_at,
 
         embeds = []
         embed = discord.Embed(
             color=await ctx.embed_color(),
             title=f"{bot_name}'s Credits",
-            description=f"Credits for all people and services that helps {bot_name} exist.",
-            timestamp=self.bot.user.created_at,
+            description=f"Credits for all people and services that helps {bot_name} exist.\n{timestamp}",
         )
         embed.set_thumbnail(url=self.bot.user.avatar.url)
         embed.set_footer(text=f"{bot_name} exists since {timestamp}")
         embed.add_field(
             name=f"{shiro} {bot_name}",
             value=(
-                f"{bot_name} is the public version of [FuturoBot]({fb_repo}) "
-                f"created by [Rosie]({rosie}) and [improved by many]({org}).\n\n"
-                f"{bot_name} is backed by a [passionate community]({fb_server}) who contributes "
-                "and creates content for everyone to enjoy.\n\n(c) PBOwner"
+                f"{bot_name} is the public, [open-source bot]({bot_repo}) "
+                f"created by [Star]({rosie}) and [improved by many]({contributors}).\n\n"
+                f"{bot_name} is backed by a passionate community who contributes and creates content for everyone to enjoy.\n"
+                f"[Join us today]({fb_server}) and help us improve!\n\n{bot_name} is not a allowed to be cloned/forked, per copyright (unless for issues/PRs(c) LeDeathAmongst"
             ),
             inline=False,
         )
