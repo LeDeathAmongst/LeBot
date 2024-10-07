@@ -51,7 +51,7 @@ def list_instances():
     if not data_manager.config_file.exists():
         print(
             "No instances have been configured! Configure one "
-            "using `redbot-setup` before trying to run the bot!"
+            "using `lebot-setup` before trying to run the bot!"
         )
         sys.exit(ExitCodes.CONFIGURATION_ERROR)
     else:
@@ -399,7 +399,7 @@ async def run_bot(red: Red, cli_flags: Namespace) -> None:
             "a) pass --team-members-are-owners when launching Red"
             " - in this case Red will treat members of the bot application's team as owners,"
             " if their team role is Owner, Admin, or Developer\n"
-            f"b) set owner manually with `redbot --edit {cli_flags.instance_name}`\n"
+            f"b) set owner manually with `lebotbot --edit {cli_flags.instance_name}`\n"
             "c) pass owner ID(s) when launching Red with --owner"
             " (and --co-owner if you need more than one) flag\n"
         )

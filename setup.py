@@ -1,7 +1,7 @@
 import os
 import sys
 from pathlib import Path
-
+import setuptools
 from setuptools import find_namespace_packages, setup
 
 ROOT_FOLDER = Path(__file__).parent.absolute()
@@ -14,6 +14,8 @@ from redbot import VersionInfo
 
 version, _ = VersionInfo._get_version(ignore_installed=True)
 
+with open("README.md", mode="r") as f:
+    long_description = f.read()
 
 def get_requirements(fp):
     return [
@@ -50,15 +52,22 @@ python_requires = ">=3.8.1"
 if not os.getenv("TOX_RED", False) or sys.version_info < (3, 12):
     python_requires += ",<3.12"
 
-# Metadata and options defined in pyproject.toml
-setup(
+setuptools.setup(
+    name="LeBot",
     version=version,
-    python_requires=python_requires,
-    # TODO: use [tool.setuptools.dynamic] table once this feature gets out of beta
-    install_requires=install_requires,
-    extras_require=extras_require,
-    # TODO: use [project] table once PEP 639 gets accepted
-    license_files=["LICENSE", "redbot/**/*.LICENSE"],
-    # TODO: use [tool.setuptools.packages] table once this feature gets out of beta
+    author="Star",
+    author_email="skylar.rae.val@proton.me",
+    description="A Multi-Purpose Discord Bot",
+    long_description=long_description,
+    long_description_content_type="text/markdown",
+    url="https://github.com/LeDeathAmongst/LeBot",
     packages=find_namespace_packages(include=["redbot", "redbot.*"]),
+    classifiers=[
+        "Programming Language :: Python :: 3",
+        "Operating System :: OS Independent",
+    ],
+    python_requires=">=3.9.1",
+    install_requires=install_requires,
+    extras_require=extras_require
 )
+# Metadata and options defined in pyproject.toml
