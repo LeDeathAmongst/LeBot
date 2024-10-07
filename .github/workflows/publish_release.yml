@@ -6,7 +6,7 @@ on:
 
 jobs:
   release_information:
-    if: github.repository == 'Cog-Creators/Red-DiscordBot'
+    if: github.repository == 'LeDeathAmongst/LeBot'
     name: GO HERE BEFORE APPROVING
     runs-on: ubuntu-latest
     steps:
@@ -96,7 +96,7 @@ jobs:
 
       - name: Generate default application.yml
         env:
-          APP_YML_FILE: "Red-DiscordBot-${{ github.ref_name }}-default-lavalink-application.yml"
+          APP_YML_FILE: "LeBot-${{ github.ref_name }}-default-lavalink-application.yml"
         run: |
           mkdir -p release_assets
           python .github/workflows/scripts/get_default_ll_server_config.py "release_assets/$APP_YML_FILE"
