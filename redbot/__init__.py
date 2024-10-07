@@ -286,7 +286,7 @@ class VersionInfo:
     def _get_version_from_package_metadata(cls, project_root: str) -> str:
         from importlib.metadata import version
 
-        return version("Red-DiscordBot")
+        return version("LeBot")
 
 
 def _update_event_loop_policy():
