@@ -399,7 +399,7 @@ async def run_bot(red: Red, cli_flags: Namespace) -> None:
             "a) pass --team-members-are-owners when launching Red"
             " - in this case Red will treat members of the bot application's team as owners,"
             " if their team role is Owner, Admin, or Developer\n"
-            f"b) set owner manually with `lebotbot --edit {cli_flags.instance_name}`\n"
+            f"b) set owner manually with `lebot --edit {cli_flags.instance_name}`\n"
             "c) pass owner ID(s) when launching Red with --owner"
             " (and --co-owner if you need more than one) flag\n"
         )
