@@ -58,6 +58,10 @@ extras_require["all"] = extras_combined("postgres")
 # Debug: Print extras_require to verify contents after combining extras
 print("Extras require (final):", extras_require)
 
+python_requires = ">=3.8.1"
+if not os.getenv("TOX_RED", False) or sys.version_info < (3, 12):
+    python_requires += ",<3.12"
+
 # Check for pyproject.toml existence and extract metadata
 if os.path.isfile("pyproject.toml"):
     print("pyproject.toml exists")
