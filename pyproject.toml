@@ -30,11 +30,11 @@ dynamic = ["version", "requires-python", "dependencies", "optional-dependencies"
 "Homepage" = "https://github.com/LeDeathAmongst/LeBot"
 
 [project.scripts]
-lebot = "redbot.__main__:main"
-lebot-setup = "redbot.setup:run_cli"
+redbot = "redbot.__main__:main"
+redbot-setup = "redbot.setup:run_cli"
 
 [project.entry-points.pytest11]
-lebot = "redbot.pytest"
+redbot = "redbot.pytest"
 
 [tool.black]
 line-length = 99
