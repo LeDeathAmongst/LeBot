@@ -133,7 +133,9 @@ def parse_cli_flags(args):
     parser = argparse.ArgumentParser(
         description="LeBot", usage="redbot <instance_name> [arguments]"
     )
-    parser.add_argument("--version", "-V", action="store_true", help="Show LeBot's current version")
+    parser.add_argument(
+        "--version", "-V", action="store_true", help="Show LeBot's current version"
+    )
     parser.add_argument("--debuginfo", action="store_true", help="Show debug information.")
     parser.add_argument(
         "--list-instances",

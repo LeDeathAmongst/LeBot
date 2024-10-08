@@ -18,12 +18,14 @@ version, _ = VersionInfo._get_version(ignore_installed=True)
 with open("README.md", mode="r") as f:
     long_description = f.read()
 
+
 def get_requirements(fp):
     return [
         line.strip()
         for line in fp.read().splitlines()
         if line.strip() and not line.strip().startswith("#")
     ]
+
 
 def extras_combined(*extra_names):
     return list(
@@ -34,6 +36,7 @@ def extras_combined(*extra_names):
             for req in extra_reqs
         }
     )
+
 
 with open(REQUIREMENTS_FOLDER / "base.txt", encoding="utf-8") as fp:
     install_requires = get_requirements(fp)
@@ -59,7 +62,7 @@ if os.path.isfile("pyproject.toml"):
             ["grep", "-A", "10", r"\[project\]", "pyproject.toml"],
             check=True,
             text=True,
-            capture_output=True
+            capture_output=True,
         )
         print(result.stdout)
     except subprocess.CalledProcessError as e:
@@ -83,6 +86,6 @@ setuptools.setup(
     ],
     python_requires=python_requires,
     install_requires=install_requires,
-    extras_require=extras_require
+    extras_require=extras_require,
 )
 # Metadata and options defined in pyproject.toml

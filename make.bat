@@ -24,7 +24,7 @@ goto:eof
 
 :newenv
 py -3.8 -m venv --clear .venv
-"%~dp0.venv\Scripts\python" -m pip install -U pip wheel
+"%~dp0.venv\Scripts\python" -m pip install -U pip wheel"
 goto syncenv
 
 :syncenv
@@ -37,8 +37,8 @@ goto:eof
 
 :help
 echo Usage:
-echo   make ^<command^>
-echo.
+echo   make <command>
+echo
 echo Commands:
 echo   reformat                   Reformat all .py files being tracked by git.
 echo   stylecheck                 Check which tracked .py files need reformatting.

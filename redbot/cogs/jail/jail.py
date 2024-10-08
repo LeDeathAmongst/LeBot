@@ -1,7 +1,7 @@
-
 import discord
 from redbot.core import commands, Config
 import asyncio
+
 
 class Jail(commands.Cog):
     def __init__(self, bot):
@@ -41,22 +41,33 @@ class Jail(commands.Cog):
                 else:
                     await chan.set_permissions(jail_role, read_messages=False, send_messages=False)
             except discord.Forbidden:
-                await ctx.send(f"Failed to update permissions for {chan.name}. Missing permissions: Manage Channels.")
+                await ctx.send(
+                    f"Failed to update permissions for {chan.name}. Missing permissions: Manage Channels."
+                )
             except discord.HTTPException as e:
                 await ctx.send(f"Failed to update permissions for {chan.name}. HTTPException: {e}")
 
         await ctx.send(f"Jail channel set to {channel.name} and permissions updated.")
-            
+
     @commands.command()
     @commands.guild_only()
     @commands.admin_or_permissions(manage_roles=True)
-    async def jail(self, ctx, user: discord.Member, time: str, *, reason: str = "Breaking rules or under investigation"):
+    async def jail(
+        self,
+        ctx,
+        user: discord.Member,
+        time: str,
+        *,
+        reason: str = "Breaking rules or under investigation",
+    ):
         """Jail a user for a specified time."""
         jail_role_id = await self.config.guild(ctx.guild).jail_role()
         jail_channel_id = await self.config.guild(ctx.guild).jail_channel()
-    
+
         if not jail_role_id or not jail_channel_id:
-            await ctx.send("Jail role or jail channel is not set. Please set them using `setrole` and `setjail`.")
+            await ctx.send(
+                "Jail role or jail channel is not set. Please set them using `setrole` and `setjail`."
+            )
             return
 
         jail_role = ctx.guild.get_role(jail_role_id)
@@ -72,15 +83,15 @@ class Jail(commands.Cog):
 
         # Save user's roles
         original_roles = [role.id for role in user.roles if role != ctx.guild.default_role]
-        
+
         jailed_users_data = await self.config.guild(ctx.guild).jailed_users()
         if not isinstance(jailed_users_data, dict):
             jailed_users_data = {}
-        
+
         jailed_users_data[str(user.id)] = {"roles": original_roles}
-        
+
         await self.config.guild(ctx.guild).jailed_users.set(jailed_users_data)
-        
+
         # Add jail role and remove original roles
         await user.add_roles(jail_role)
         await user.remove_roles(*[ctx.guild.get_role(role_id) for role_id in original_roles])
@@ -112,14 +123,20 @@ class Jail(commands.Cog):
         # Remove jail role and restore original roles
         try:
             await user.remove_roles(jail_role)
-            original_roles = await self.config.guild(guild).jailed_users.get_raw(str(user.id), "roles", default=[])
-            roles = [guild.get_role(role_id) for role_id in original_roles if guild.get_role(role_id)]
+            original_roles = await self.config.guild(guild).jailed_users.get_raw(
+                str(user.id), "roles", default=[]
+            )
+            roles = [
+                guild.get_role(role_id) for role_id in original_roles if guild.get_role(role_id)
+            ]
             await user.add_roles(*roles)
 
             jail_channel_id = await self.config.guild(guild).jail_channel()
             jail_channel = guild.get_channel(jail_channel_id)
             if jail_channel:
-                jail_message_id = await self.config.guild(guild).jailed_users.get_raw(str(user.id), "jail_message_id", default=None)
+                jail_message_id = await self.config.guild(guild).jailed_users.get_raw(
+                    str(user.id), "jail_message_id", default=None
+                )
                 if jail_message_id:
                     try:
                         jail_message = await jail_channel.fetch_message(jail_message_id)
@@ -127,20 +144,28 @@ class Jail(commands.Cog):
                     except discord.NotFound:
                         pass
                     except discord.Forbidden:
-                        await guild.system_channel.send(f"Failed to delete jail message for {user.mention}. Missing permissions: Manage Messages.")
+                        await guild.system_channel.send(
+                            f"Failed to delete jail message for {user.mention}. Missing permissions: Manage Messages."
+                        )
                     except discord.HTTPException as e:
-                        await guild.system_channel.send(f"Failed to delete jail message for {user.mention}. HTTPException: {e}")
+                        await guild.system_channel.send(
+                            f"Failed to delete jail message for {user.mention}. HTTPException: {e}"
+                        )
 
         except discord.Forbidden:
-            await guild.system_channel.send(f"Failed to remove jail role from {user.mention}. Missing permissions: Manage Roles.")
+            await guild.system_channel.send(
+                f"Failed to remove jail role from {user.mention}. Missing permissions: Manage Roles."
+            )
         except discord.HTTPException as e:
-            await guild.system_channel.send(f"Failed to remove jail role from {user.mention}. HTTPException: {e}")
+            await guild.system_channel.send(
+                f"Failed to remove jail role from {user.mention}. HTTPException: {e}"
+            )
 
         # Remove user from jailed users list
         await self.config.guild(guild).jailed_users.clear_raw(str(user.id))
 
     def parse_time(self, time_str):
-        units = {'h': 3600, 'm': 60, 's': 1}
+        units = {"h": 3600, "m": 60, "s": 1}
         try:
             return int(time_str[:-1]) * units[time_str[-1]]
         except (ValueError, KeyError):

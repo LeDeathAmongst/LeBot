@@ -69,6 +69,7 @@ X: `*88888%`     !   8888    9888  9888    4888>       8888P     888E    4888>  
 
 _ = Translator(__name__, __file__)
 
+
 def get_outdated_red_messages(pypi_version: str, py_version_req: str) -> Tuple[str, str]:
     outdated_red_message = _(
         "Your instance is out of date! {} is the current version, however you are using {}!"
@@ -83,10 +84,12 @@ def get_outdated_red_messages(pypi_version: str, py_version_req: str) -> Tuple[s
     current_python = platform.python_version()
     extra_update = _(
         "\n\nWhile the following command should work in most scenarios as it is "
-        "based on your current OS, environment, and Python version")
+        "based on your current OS, environment, and Python version"
+    )
 
     rich_outdated_message = Text(outdated_red_message, style="bold red")
     return outdated_red_message, rich_outdated_message
+
 
 # Example function to create a rainbow gradient text
 def gradient_text(text, colors):
@@ -96,6 +99,7 @@ def gradient_text(text, colors):
         gradient.append(char, style=colors[i % len(colors)])
     return gradient
 
+
 def get_holiday_colors():
     today = datetime.now().date()
     holiday_colors = {
@@ -104,7 +108,7 @@ def get_holiday_colors():
         "Thanksgiving": ["orange", "brown", "yellow", "red"],
         "Valentine's Day": ["red", "pink", "white", "purple"],
         "St. Patrick's Day": ["green", "gold", "white", "orange"],
-        "New Year's Day": ["gold", "silver", "black", "white"]
+        "New Year's Day": ["gold", "silver", "black", "white"],
     }
 
     if datetime(today.year, 12, 20).date() <= today <= datetime(today.year, 12, 28).date():
@@ -123,14 +127,16 @@ def get_holiday_colors():
     # Default colors if no holiday is active
     return ["blue", "white", "gray"]
 
+
 def get_disk_usage():
     total, used, free = shutil.disk_usage("/")
     return {
         "Total": f"{total // (2**30)} GB",
         "Used": f"{used // (2**30)} GB",
         "Free": f"{free // (2**30)} GB",
-        "Usage Percentage": f"{used / total * 100:.2f}%"
+        "Usage Percentage": f"{used / total * 100:.2f}%",
     }
+
 
 def get_resource_usage():
     # CPU usage percentage
@@ -141,13 +147,11 @@ def get_resource_usage():
         "Total": f"{memory_info.total // (2**20)} MB",
         "Used": f"{memory_info.used // (2**20)} MB",
         "Free": f"{memory_info.free // (2**20)} MB",
-        "Usage Percentage": f"{memory_info.percent}%"
+        "Usage Percentage": f"{memory_info.percent}%",
     }
 
-    return {
-        "CPU Usage": f"{cpu_usage}%",
-        "Memory Usage": memory_usage
-    }
+    return {"CPU Usage": f"{cpu_usage}%", "Memory Usage": memory_usage}
+
 
 def init_events(bot, cli_flags):
     @bot.event
@@ -208,8 +212,20 @@ def init_events(bot, cli_flags):
         table_resource_usage.add_column("Free", justify="right")
         table_resource_usage.add_column("Usage Percentage", justify="right")
         table_resource_usage.add_row("CPU", "-", f"{resource_usage['CPU Usage']}", "-", "-")
-        table_resource_usage.add_row("Memory", resource_usage['Memory Usage']['Total'], resource_usage['Memory Usage']['Used'], resource_usage['Memory Usage']['Free'], resource_usage['Memory Usage']['Usage Percentage'])
-        table_resource_usage.add_row("Disk", disk_usage['Total'], disk_usage['Used'], disk_usage['Free'], disk_usage['Usage Percentage'])
+        table_resource_usage.add_row(
+            "Memory",
+            resource_usage["Memory Usage"]["Total"],
+            resource_usage["Memory Usage"]["Used"],
+            resource_usage["Memory Usage"]["Free"],
+            resource_usage["Memory Usage"]["Usage Percentage"],
+        )
+        table_resource_usage.add_row(
+            "Disk",
+            disk_usage["Total"],
+            disk_usage["Used"],
+            disk_usage["Free"],
+            disk_usage["Usage Percentage"],
+        )
 
         table_counts = Table(show_edge=False, show_header=False, box=box.MINIMAL)
         table_counts.add_row("Shards", str(bot.shard_count))
@@ -234,20 +250,20 @@ def init_events(bot, cli_flags):
                     [
                         Panel(
                             table_general_info,
-                            title = gradient_text(bot.user.display_name, get_holiday_colors()),
+                            title=gradient_text(bot.user.display_name, get_holiday_colors()),
                         ),
                         Panel(
                             table_counts,
-                            title = gradient_text(bot.user.display_name, get_holiday_colors()),
+                            title=gradient_text(bot.user.display_name, get_holiday_colors()),
                         ),
                         Panel(
                             table_bot_info,
-                            title = gradient_text(bot.user.display_name, get_holiday_colors()),
+                            title=gradient_text(bot.user.display_name, get_holiday_colors()),
                         ),
                         Panel(
                             table_resource_usage,
-                            title = gradient_text(bot.user.display_name, get_holiday_colors()),
-                        )
+                            title=gradient_text(bot.user.display_name, get_holiday_colors()),
+                        ),
                     ],
                     equal=True,
                     align="center",
@@ -567,7 +583,9 @@ def init_events(bot, cli_flags):
             delay = discord.utils.format_dt(
                 datetime.utcnow() + timedelta(seconds=error.retry_after), "R"
             )
-            msg = _("This command is on cooldown. You must wait. \nTry again {delay}.").format(delay=delay)
+            msg = _("This command is on cooldown. You must wait. \nTry again {delay}.").format(
+                delay=delay
+            )
             embed = discord.Embed(
                 title=_("Command Cooldown"), description=msg, color=await ctx.embed_color()
             )

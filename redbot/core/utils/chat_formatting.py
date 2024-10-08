@@ -61,6 +61,7 @@ def success(text: str) -> str:
     """
     return f"<a:Tick:1279795666507272225> {text}"
 
+
 def hyperlink(text: str, url: str) -> str:
     """Create hyperlink markdown with text and a URL.
     Parameters

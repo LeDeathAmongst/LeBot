@@ -77,6 +77,7 @@ _ = translate
 
 __version__ = "1.0.0"
 
+
 @cog_i18n(_)
 class Permissions(commands.Cog):
     """Customize permissions for commands and cogs."""
@@ -181,7 +182,9 @@ class Permissions(commands.Cog):
             "(https://docs.discord.red/en/stable/cog_permissions.html)."
         )
 
-        embed = discord.Embed(title="Permissions Explanation", description=message, color=discord.Color.blue())
+        embed = discord.Embed(
+            title="Permissions Explanation", description=message, color=discord.Color.blue()
+        )
         await ctx.send(embed=embed, ephemeral=ctx.interaction is not None)
 
     @permissions.command(name="canrun")
@@ -218,7 +221,10 @@ class Permissions(commands.Cog):
                 if can
                 else error(_("That user cannot run the specified command."))
             )
-        embed = discord.Embed(description=out, color=discord.Color.green() if "success" in out else discord.Color.red())
+        embed = discord.Embed(
+            description=out,
+            color=discord.Color.green() if "success" in out else discord.Color.red(),
+        )
         await ctx.send(embed=embed, ephemeral=ctx.interaction is not None)
 
     @commands.guildowner_or_permissions(administrator=True)
@@ -243,7 +249,11 @@ class Permissions(commands.Cog):
                     default: false
             """
         )
-        embed = discord.Embed(title="YAML Example", description=box(example_yaml, lang="yaml"), color=discord.Color.blue())
+        embed = discord.Embed(
+            title="YAML Example",
+            description=box(example_yaml, lang="yaml"),
+            color=discord.Color.blue(),
+        )
         await ctx.send(embed=embed, ephemeral=ctx.interaction is not None)
 
     @commands.is_owner()
@@ -281,7 +291,10 @@ class Permissions(commands.Cog):
             await ctx.send(_("I'm not allowed to DM you."), ephemeral=ctx.interaction is not None)
         else:
             if ctx.guild is not None:
-                await ctx.send(_("I've just sent the file to you via DM."), ephemeral=ctx.interaction is not None)
+                await ctx.send(
+                    _("I've just sent the file to you via DM."),
+                    ephemeral=ctx.interaction is not None,
+                )
         finally:
             file.close()
 
@@ -296,7 +309,9 @@ class Permissions(commands.Cog):
         except discord.Forbidden:
             await ctx.send(_("I'm not allowed to DM you."), ephemeral=ctx.interaction is not None)
         else:
-            await ctx.send(_("I've just sent the file to you via DM."), ephemeral=ctx.interaction is not None)
+            await ctx.send(
+                _("I've just sent the file to you via DM."), ephemeral=ctx.interaction is not None
+            )
         finally:
             file.close()
 
@@ -393,7 +408,9 @@ class Permissions(commands.Cog):
 
         `<who_or_what>` is a comma-separated list of users, channels, or roles the rule is for.
         """
-        await self._remove_rule(cog_or_cmd=cog_or_command, model_id=who_or_what.id, guild_id=GLOBAL)
+        await self._remove_rule(
+            cog_or_cmd=cog_or_command, model_id=who_or_what.id, guild_id=GLOBAL
+        )
         embed = discord.Embed(description=_("Rule removed."), color=discord.Color.red())
         await ctx.send(embed=embed, ephemeral=ctx.interaction is not None)
 
@@ -423,7 +440,10 @@ class Permissions(commands.Cog):
     @commands.guildowner_or_permissions(administrator=True)
     @permissions.command(name="setdefaultserverrule", aliases=["setdefaultguildrule"])
     async def permissions_setdefaultguildrule(
-        self, ctx: commands.Context, allow_or_deny: Literal["allow", "deny", "clear"], cog_or_command: CogOrCommand
+        self,
+        ctx: commands.Context,
+        allow_or_deny: Literal["allow", "deny", "clear"],
+        cog_or_command: CogOrCommand,
     ):
         """Set the default rule for a command in this server.
 
@@ -448,7 +468,10 @@ class Permissions(commands.Cog):
     @commands.is_owner()
     @permissions.command(name="setdefaultglobalrule")
     async def permissions_setdefaultglobalrule(
-        self, ctx: commands.Context, allow_or_deny: Literal["allow", "deny", "clear"], cog_or_command: CogOrCommand
+        self,
+        ctx: commands.Context,
+        allow_or_deny: Literal["allow", "deny", "clear"],
+        cog_or_command: CogOrCommand,
     ):
         """Set the default global rule for a command.
 
@@ -462,9 +485,7 @@ class Permissions(commands.Cog):
         rule for. This is case sensitive.
         """
         rule = {"allow": True, "deny": False, "clear": None}[allow_or_deny]
-        await self._set_default_rule(
-            rule=rule, cog_or_cmd=cog_or_command, guild_id=GLOBAL
-        )
+        await self._set_default_rule(rule=rule, cog_or_cmd=cog_or_command, guild_id=GLOBAL)
         embed = discord.Embed(description=_("Default set."), color=discord.Color.green())
         await ctx.send(embed=embed, ephemeral=ctx.interaction is not None)
 

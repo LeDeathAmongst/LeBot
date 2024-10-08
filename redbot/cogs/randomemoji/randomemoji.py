@@ -3,6 +3,7 @@ from discord.ext import commands
 from redbot.core import commands
 import random
 
+
 class RandomEmoji(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -16,6 +17,7 @@ class RandomEmoji(commands.Cog):
             await ctx.send(emoji)
         else:
             await ctx.send("I don't have access to any custom emojis.")
+
 
 def setup(bot):
     bot.add_cog(RandomEmoji(bot))

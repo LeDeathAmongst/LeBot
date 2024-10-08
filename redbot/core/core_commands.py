@@ -479,20 +479,20 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
         embed.add_field(
             name="Python Version",
             value=f"{dot} <a:Python:1292312029134192650> {python_version}",
-            inline=True
+            inline=True,
         )
         embed.add_field(
-            name=f"{bot_name} Version",
-            value=f"{dot} {shiro} {red_version}",
-            inline=True
+            name=f"{bot_name} Version", value=f"{dot} {shiro} {red_version}", inline=True
         )
         embed.add_field(
             name="Discord.py Version",
             value=f"{dot} <:dpy:1292313742167511080> {dpy_version}",
-            inline=True
+            inline=True,
         )
 
-        custom_info = await self.bot._config.custom_info() if hasattr(self.bot, '_config') else None
+        custom_info = (
+            await self.bot._config.custom_info() if hasattr(self.bot, "_config") else None
+        )
         if custom_info:
             embed.add_field(
                 name=f"<a:ShiroHeart:1292312320684327042> About {bot_name}",
@@ -543,7 +543,7 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
         shiro = discord.PartialEmoji(name="Shiro", animated=True, id=1292312705692074106)
         bot_repo = "https://github.com/LeDeathAmongst/LeBot"
         contributors = bot_repo + "/CHANGES.rst"
-        timestamp=self.bot.user.created_at
+        timestamp = self.bot.user.created_at
 
         embeds = []
         embed = discord.Embed(
@@ -2434,22 +2434,29 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
         """
         with contextlib.suppress(discord.HTTPException):
             if directly:
-                embed = discord.Embed(title="Shutting Down in 3.. 2.. 1...", color=await ctx.embed_color())
+                embed = discord.Embed(
+                    title="Shutting Down in 3.. 2.. 1...", color=await ctx.embed_color()
+                )
                 await ctx.send(embed=embed)
                 await self.bot.shutdown()
                 return
             embed = discord.Embed(
-                title="Are you sure you want to shut down? Click `yes` to shutdown, or `no` to cancel.", color=await ctx.embed_color()
+                title="Are you sure you want to shut down? Click `yes` to shutdown, or `no` to cancel.",
+                color=await ctx.embed_color(),
             )
             view = ConfirmView(ctx.author, disable_buttons=True)
             view.message = await ctx.send(embed=embed, view=view)
             await view.wait()
             if view.result:
-                embed = discord.Embed(title="Shutting Down in 3.. 2.. 1...", color=await ctx.embed_color())
+                embed = discord.Embed(
+                    title="Shutting Down in 3.. 2.. 1...", color=await ctx.embed_color()
+                )
                 await view.message.edit(embed=embed)
                 await self.bot.shutdown()
             else:
-                embed = discord.Embed(title="Cancelling in 3.. 2.. 1...", color=await ctx.embed_color())
+                embed = discord.Embed(
+                    title="Cancelling in 3.. 2.. 1...", color=await ctx.embed_color()
+                )
                 await view.message.edit(embed=embed)
 
     @commands.command(name="restart", aliases=["undead"])
@@ -2469,22 +2476,29 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
         """
         with contextlib.suppress(discord.HTTPException):
             if directly:
-                embed = discord.Embed(title="Restart Incoming... 3.. 2.. 1...", color=await ctx.embed_color())
+                embed = discord.Embed(
+                    title="Restart Incoming... 3.. 2.. 1...", color=await ctx.embed_color()
+                )
                 await ctx.send(embed=embed)
                 await self.bot.shutdown(restart=True)
                 return
             embed = discord.Embed(
-                title="Are you sure you want to restart? Click `yes` to restart or `no` to cancel.", color=await ctx.embed_color()
+                title="Are you sure you want to restart? Click `yes` to restart or `no` to cancel.",
+                color=await ctx.embed_color(),
             )
             view = ConfirmView(ctx.author, disable_buttons=True)
             view.message = await ctx.send(embed=embed, view=view)
             await view.wait()
             if view.result:
-                embed = discord.Embed(title="Restart Incoming... 3.. 2.. 1...", color=await ctx.embed_color())
+                embed = discord.Embed(
+                    title="Restart Incoming... 3.. 2.. 1...", color=await ctx.embed_color()
+                )
                 await view.message.edit(embed=embed)
                 await self.bot.shutdown(restart=True)
             else:
-                embed = discord.Embed(title="Cancelling.. 3.. 2.. 1...", color=await ctx.embed_color())
+                embed = discord.Embed(
+                    title="Cancelling.. 3.. 2.. 1...", color=await ctx.embed_color()
+                )
                 await view.message.edit(embed=embed)
 
     @bank.is_owner_if_bank_global()
@@ -6000,7 +6014,7 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
         name="licenseinfo",
         aliases=["licenceinfo"],
         i18n=_,
-        hidden=True
+        hidden=True,
     )
     async def license_info_command(self, ctx):
         """
@@ -6026,7 +6040,7 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
             color=await self.bot.get_embed_color(message.channel),
             title="<:shy:1286134076721336402> Need help?",
             url=support,
-            description=f"Use `{prefixes[0]}help` to get help!"
+            description=f"Use `{prefixes[0]}help` to get help!",
         )
         embed.add_field(
             name="My prefixes in this server are:" if message.guild else "My prefixes are:",
