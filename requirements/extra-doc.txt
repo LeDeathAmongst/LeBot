@@ -36,7 +36,7 @@ sphinx==7.1.2
     #   sphinxcontrib-trio
 sphinx-prompt==1.7.0
     # via -r extra-doc.in
-sphinx-rtd-theme==2.0.0
+sphinx_rtd_theme==2.0.0
     # via -r extra-doc.in
 sphinxcontrib-applehelp==1.0.4
     # via sphinx
@@ -54,6 +54,7 @@ sphinxcontrib-serializinghtml==1.1.5
     # via sphinx
 sphinxcontrib-trio==1.1.2
     # via -r extra-doc.in
+tabulate
 urllib3==2.2.2
     # via requests
 zipp==3.20.1
