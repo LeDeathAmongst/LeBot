@@ -71,7 +71,7 @@ _ = Translator(__name__, __file__)
 
 def get_outdated_red_messages(pypi_version: str, py_version_req: str) -> Tuple[str, str]:
     outdated_red_message = _(
-        f"Your {} instance is out of date! {} is the current version, however you are using {}!"
+        "Your {} instance is out of date! {} is the current version, however you are using {}!"
     ).format(ctx.bot.user.name,pypi_version, red_version)
     extra_update = _(
         "\n\nWhile the following command should work in most scenarios as it is "
