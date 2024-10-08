@@ -10,6 +10,7 @@ import io
 import random
 import markdown
 import time
+from tabulate import tabulate
 import os
 import re
 import sys
