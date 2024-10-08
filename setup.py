@@ -85,3 +85,4 @@ setuptools.setup(
     install_requires=install_requires,
     extras_require=extras_require
 )
+# Metadata and options defined in pyproject.toml
