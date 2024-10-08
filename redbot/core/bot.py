@@ -72,7 +72,7 @@ SHARED_API_TOKENS = "SHARED_API_TOKENS"
 
 log = logging.getLogger("LeBot")
 
-__all__ = ("LeBot",)
+__all__ = ("Red",)
 
 NotMessage = namedtuple("NotMessage", "guild")
 
