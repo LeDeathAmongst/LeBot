@@ -50,6 +50,13 @@ python_requires = ">=3.8.1"
 if not os.getenv("TOX_RED", False) or sys.version_info < (3, 12):
     python_requires += ",<3.12"
 
+if [ -f "pyproject.toml" ]; then
+    echo "pyproject.toml exists"
+    # Test: Check for project metadata in pyproject.toml
+    grep -A 10 "\[project\]" pyproject.toml
+else
+    echo "pyproject.toml does not exist"
+fi
 # Metadata and options defined in pyproject.toml
 setup(
     version=version,
