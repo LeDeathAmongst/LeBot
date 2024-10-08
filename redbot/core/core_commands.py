@@ -9,6 +9,7 @@ import logging
 import io
 import random
 import markdown
+import time
 import os
 import re
 import sys
@@ -57,13 +58,17 @@ from .utils.views import ConfirmView, ContactDmView
 from .utils._internal_utils import fetch_latest_red_version_info
 from .utils.predicates import MessagePredicate
 from .utils.chat_formatting import (
+    bold,
     box,
-    escape,
+    error,
     humanize_list,
     humanize_number,
     humanize_timedelta,
     inline,
     pagify,
+    success,
+    text_to_file,
+    underline,
     warning,
 )
 from .commands import CommandConverter, CogConverter
