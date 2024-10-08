@@ -1,5 +1,6 @@
 import os
 import sys
+import subprocess  # Ensure subprocess is imported
 from pathlib import Path
 import setuptools
 from setuptools import find_namespace_packages, setup
@@ -24,7 +25,6 @@ def get_requirements(fp):
         if line.strip() and not line.strip().startswith("#")
     ]
 
-
 def extras_combined(*extra_names):
     return list(
         {
@@ -34,7 +34,6 @@ def extras_combined(*extra_names):
             for req in extra_reqs
         }
     )
-
 
 with open(REQUIREMENTS_FOLDER / "base.txt", encoding="utf-8") as fp:
     install_requires = get_requirements(fp)
@@ -47,18 +46,26 @@ for file in REQUIREMENTS_FOLDER.glob("extra-*.txt"):
 extras_require["dev"] = extras_combined()
 extras_require["all"] = extras_combined("postgres")
 
-
 python_requires = ">=3.8.1"
 if not os.getenv("TOX_RED", False) or sys.version_info < (3, 12):
     python_requires += ",<3.12"
 
-if [ -f "pyproject.toml" ]; then
-    echo "pyproject.toml exists"
+# Check for pyproject.toml existence and extract metadata
+if os.path.isfile("pyproject.toml"):
+    print("pyproject.toml exists")
     # Test: Check for project metadata in pyproject.toml
-    grep -A 10 "\[project\]" pyproject.toml
-else
-    echo "pyproject.toml does not exist"
-fi
+    try:
+        result = subprocess.run(
+            ["grep", "-A", "10", r"\[project\]", "pyproject.toml"],
+            check=True,
+            text=True,
+            capture_output=True
+        )
+        print(result.stdout)
+    except subprocess.CalledProcessError as e:
+        print("Error occurred while running grep:", e)
+else:
+    print("pyproject.toml does not exist")
 
 setuptools.setup(
     name="LeBot",
@@ -78,4 +85,3 @@ setuptools.setup(
     install_requires=install_requires,
     extras_require=extras_require
 )
-# Metadata and options defined in pyproject.toml
