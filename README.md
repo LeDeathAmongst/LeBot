@@ -1,45 +1,29 @@
 <h1 align="center">
   <br>
-  <a href="https://github.com/Cog-Creators/Red-DiscordBot/tree/V3/develop"><img src="https://imgur.com/pY1WUFX.png" alt="Red - Discord Bot"></a>
+  <a href="https://github.com/LeDeathAmongst/LeBot"><img src="https://imgur.com/pY1WUFX.png" alt="LeBot"></a>
   <br>
-  Red Discord Bot
+  LeBot
   <br>
 </h1>
 
 <h4 align="center">Music, Moderation, Trivia, Stream Alerts and Fully Modular.</h4>
 
-<p align="center">
-  <a href="https://discord.gg/red">
-    <img src="https://discordapp.com/api/guilds/133049272517001216/widget.png?style=shield" alt="Discord Server">
-  </a>
-  <a href="https://pypi.org/project/Red-DiscordBot/">
-     <img alt="PyPI" src="https://img.shields.io/pypi/v/Red-Discordbot">
+  <a href="https://pypi.org/project/LeBot/">
+     <img alt="PyPI" src="https://img.shields.io/pypi/v/LeBot">
   </a>
   <a href="https://www.python.org/downloads/">
-    <img alt="PyPI - Python Version" src="https://img.shields.io/pypi/pyversions/Red-Discordbot">
+    <img alt="PyPI - Python Version" src="https://img.shields.io/pypi/pyversions/LeBot">
   </a>
   <a href="https://github.com/Rapptz/discord.py/">
      <img src="https://img.shields.io/badge/discord-py-blue.svg" alt="discord.py">
-  </a>
-  <a href="https://www.patreon.com/Red_Devs">
-    <img src="https://img.shields.io/badge/Support-Red!-red.svg" alt="Support Red on Patreon!">
-  </a>
+   </a>
 </p>
-<p align="center">
-  <a href="https://github.com/Cog-Creators/Red-DiscordBot/actions">
-    <img src="https://img.shields.io/github/actions/workflow/status/Cog-Creators/Red-Discordbot/tests.yml?label=tests" alt="GitHub Actions">
-  </a>
-  <a href="http://docs.discord.red/en/stable/?badge=stable">
-    <img src="https://readthedocs.org/projects/red-discordbot/badge/?version=stable" alt="Red on readthedocs.org">
-  </a>
+<p>
   <a href="https://github.com/psf/black">
     <img src="https://img.shields.io/badge/code%20style-black-000000.svg" alt="Code Style: Black">
   </a>
   <a href="http://makeapullrequest.com">
     <img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg">
-  </a>
-  <a href="https://crowdin.com/project/red-discordbot">
-    <img src="https://d322cqt584bo4o.cloudfront.net/red-discordbot/localized.svg" alt="Localized with Crowdin">
   </a>
 </p>
 
@@ -48,7 +32,7 @@
   •
   <a href="#installation">Installation</a>
   •
-  <a href="http://docs.discord.red/en/stable/index.html">Documentation</a>
+  <a href="http://setup.prismbot.icu/en/stable/index.html">Documentation</a>
   •
   <a href="#plugins">Plugins</a>
   •
@@ -59,7 +43,7 @@
 
 # Overview
 
-Red is a fully modular bot – meaning all features and commands can be enabled/disabled to your
+LeBot is a fully modular bot – meaning all features and commands can be enabled/disabled to your
 liking, making it completely customizable. This is a *self-hosted bot* – meaning you will need
 to host and maintain your own instance. You can turn Red into an admin bot, music bot, trivia bot,
 new best friend or all of these together!  
