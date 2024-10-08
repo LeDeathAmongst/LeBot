@@ -41,22 +41,26 @@ def extras_combined(*extra_names):
 with open(REQUIREMENTS_FOLDER / "base.txt", encoding="utf-8") as fp:
     install_requires = get_requirements(fp)
 
-# Debug: Print install_requires to verify contents
-print("Install requires:", install_requires)
+# Debug: Print install_requires with each item on a new line
+print("Install requires:\n" + "\n".join(install_requires))
 
 extras_require = {}
 for file in REQUIREMENTS_FOLDER.glob("extra-*.txt"):
     with file.open(encoding="utf-8") as fp:
         extras_require[file.stem[len("extra-") :]] = get_requirements(fp)
 
-# Debug: Print extras_require to verify contents after loading from files
-print("Extras require (initial):", extras_require)
+# Debug: Print extras_require with each item on a new line
+print("Extras require (initial):")
+for key, value in extras_require.items():
+    print(f"{key}:\n" + "\n".join(value))
 
 extras_require["dev"] = extras_combined()
 extras_require["all"] = extras_combined("postgres")
 
-# Debug: Print extras_require to verify contents after combining extras
-print("Extras require (final):", extras_require)
+# Debug: Print extras_require after combining extras with each item on a new line
+print("Extras require (final):")
+for key, value in extras_require.items():
+    print(f"{key}:\n" + "\n".join(value))
 
 python_requires = ">=3.8.1"
 if not os.getenv("TOX_RED", False) or sys.version_info < (3, 12):
