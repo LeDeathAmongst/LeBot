@@ -1,4 +1,5 @@
 import asyncio
+import copy
 import contextlib
 import datetime
 import importlib
@@ -20,7 +21,7 @@ from pathlib import Path
 from collections import defaultdict
 from redbot.core import app_commands, data_manager
 from redbot.core.utils.menus import menu
-from redbot.core.utils.views import SetApiView
+from redbot.core.utils.views import _StopButton, InviteView, SetApiView, View
 from redbot.core.commands import GuildConverter, RawUserIdConverter
 from string import ascii_letters, digits
 from typing import (
@@ -464,9 +465,10 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
         python_version = "[`{}.{}.{}`]({})".format(*python, python_url)
         dpy_version = "[`{}`]({})".format(discord.__version__, dpy_repo)
         red_version = "[`{}`]({})".format(__version__, bot_repo)
-        dot = str(self.bot.get_emoji(1279795628335042600))
-        shiro = str(self.bot.get_emoji(1292312705692074106)
-        bot_name = ctx.bot.user.name
+        dot = discord.PartialEmoji(name="dot", animated=False, id=1279795628335042600)
+        shiro = discord.PartialEmoji(name="Shiro", animated=True, id=1292312705692074106)
+        bot_name = self.bot.user.name
+
         embed = discord.Embed(title="Various Versions")
         embed.add_field(
             name="Python Version",
@@ -474,7 +476,7 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
             inline=True
         )
         embed.add_field(
-            name="{bot_name} Version",
+            name=f"{bot_name} Version",
             value=f"{dot} {shiro} {red_version}",
             inline=True
         )
@@ -483,7 +485,8 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
             value=f"{dot} <:dpy:1292313742167511080> {dpy_version}",
             inline=True
         )
-        custom_info = await self.bot._config.custom_info()
+
+        custom_info = await self.bot._config.custom_info() if hasattr(self.bot, '_config') else None
         if custom_info:
             embed.add_field(
                 name=f"<a:ShiroHeart:1292312320684327042> About {bot_name}",
@@ -497,10 +500,10 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
         about = (
             f"{bot_name} is the public, [open-source bot]({bot_repo}) "
             f"created by [Star]({rosie}) and [improved by many]({contributors}).\n\n"
-            "{bot_name} is backed by a passionate community who contributes and creates content for everyone to enjoy.\n"
+            f"{bot_name} is backed by a passionate community who contributes and creates content for everyone to enjoy.\n"
             f"[Join us today]({fb_server}) and help us improve!\n\n{bot_name} is not a allowed to be cloned/forked, per copyright (unless for issues/PRs(c) LeDeathAmongst"
         )
-        embed.add_field(name="{shiro} About FuturoBot", value=about, inline=False)
+        embed.add_field(name=f"{shiro} About {bot_name}", value=about, inline=False)
 
         bot_install = await self.bot.get_install_url()
         server_invite = await self.bot.get_support_server_url()
@@ -530,24 +533,27 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
         fb_server = "https://discord.gg/HXdan6NnfJ"
         kuro = self.bot.get_user(1269563963994280038)
         lamune = self.bot.get_user(1130886272550981662)
-        shiro = str(self.bot.get_emoji(1292312705692074106)
+        dot = discord.PartialEmoji(name="dot", animated=False, id=1279795628335042600)
+        shiro = discord.PartialEmoji(name="Shiro", animated=True, id=1292312705692074106)
+        bot_repo = "https://github.com/LeDeathAmongst/LeBot"
+        contributors = bot_repo + "/CHANGES.rst"
+        timestamp=self.bot.user.created_at
 
         embeds = []
         embed = discord.Embed(
             color=await ctx.embed_color(),
             title=f"{bot_name}'s Credits",
-            description=f"Credits for all people and services that helps {bot_name} exist.",
-            timestamp=self.bot.user.created_at,
+            description=f"Credits for all people and services that helps {bot_name} exist.\n{timestamp}",
         )
         embed.set_thumbnail(url=self.bot.user.avatar.url)
         embed.set_footer(text=f"{bot_name} exists since {timestamp}")
         embed.add_field(
             name=f"{shiro} {bot_name}",
             value=(
-                f"{bot_name} is the public version of [FuturoBot]({fb_repo}) "
-                f"created by [Rosie]({rosie}) and [improved by many]({org}).\n\n"
-                f"{bot_name} is backed by a [passionate community]({fb_server}) who contributes "
-                "and creates content for everyone to enjoy.\n\n(c) PBOwner"
+                f"{bot_name} is the public, [open-source bot]({bot_repo}) "
+                f"created by [Star]({rosie}) and [improved by many]({contributors}).\n\n"
+                f"{bot_name} is backed by a passionate community who contributes and creates content for everyone to enjoy.\n"
+                f"[Join us today]({fb_server}) and help us improve!\n\n{bot_name} is not a allowed to be cloned/forked, per copyright (unless for issues/PRs(c) LeDeathAmongst"
             ),
             inline=False,
         )
@@ -1480,42 +1486,22 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
             else _("Embeds are now disabled for you in DMs.")
         )
 
-    @commands.command()
+    @commands.command(aliases=["tb"])
     @commands.is_owner()
-    async def traceback(self, ctx: commands.Context, public: bool = False):
-        """Sends to the owner the last command exception that has occurred.
-
-        If public (yes is specified), it will be sent to the chat instead.
-
-        Warning: Sending the traceback publicly can accidentally reveal sensitive information about your computer or configuration.
-
-        **Examples:**
-        - `[p]traceback` - Sends the traceback to your DMs.
-        - `[p]traceback True` - Sends the last traceback in the current context.
-
-        **Arguments:**
-        - `[public]` - Whether to send the traceback to the current context. Leave blank to send to your DMs.
-        """
-        channel = ctx.channel if public else ctx.author
-
-        if self.bot._last_exception:
-            try:
-                await self.bot.send_interactive(
-                    channel,
-                    pagify(self.bot._last_exception, shorten_by=10),
-                    user=ctx.author,
-                    box_lang="py",
-                )
-            except discord.HTTPException:
-                await ctx.channel.send(
-                    "I couldn't send the traceback message to you in DM. "
-                    "Either you blocked me or you disabled DMs in this server."
-                )
-                return
-            if not public:
-                await ctx.tick()
-        else:
+    async def traceback(self, ctx: commands.Context):
+        """Sends the last command exception that has occurred."""
+        exception = self.bot._last_exception
+        if not exception:
             await ctx.send(_("No exception has occurred yet."))
+            return
+
+        view = View()
+        view.add_item(_StopButton())
+
+        if len(exception) > 1990:  # Limit is 2000 (- 10 for py code blocks)
+            await view.start(ctx, file=text_to_file(exception, filename="exception.py"))
+        else:
+            await view.start(ctx, box(exception, lang="py"))
 
     @commands.command()
     @commands.check(CoreLogic._can_get_invite_url)
@@ -6001,12 +5987,14 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
 
     # Removing this command from forks is a violation of the GPLv3 under which it is licensed.
     # Otherwise interfering with the ability for this command to be accessible is also a violation.
-    @commands.cooldown(1, 180, lambda ctx: (ctx.message.channel.id, ctx.message.author.id))
+    @commands.is_owner()
+    @commands.cooldown(1, 150000000, lambda ctx: (ctx.message.channel.id, ctx.message.author.id))
     @commands.command(
         cls=commands.commands._AlwaysAvailableCommand,
         name="licenseinfo",
         aliases=["licenceinfo"],
         i18n=_,
+        hidden=True
     )
     async def license_info_command(self, ctx):
         """
