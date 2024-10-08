@@ -55,7 +55,7 @@ newenv:
 	.venv/bin/pip install -U pip wheel
 	$(MAKE) syncenv
 syncenv:
-	.venv/bin/pip install -Ur ./tools/dev-requirements.txt
+	$(VENV_PYTHON) -m pip install -Ur ./tools/dev-requirements.txt
 
 # Help
 help:
