@@ -30,8 +30,8 @@ dynamic = ["version", "requires-python", "dependencies", "optional-dependencies"
 "Homepage" = "https://github.com/LeDeathAmongst/LeBot"
 
 [project.scripts]
-redbot = "redbot.__main__:main"
-redbot-setup = "redbot.setup:run_cli"
+lebot = "redbot.__main__:main"
+lebot-setup = "redbot.setup:run_cli"
 
 [project.entry-points.pytest11]
 red-discordbot = "redbot.pytest"
