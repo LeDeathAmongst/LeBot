@@ -86,6 +86,7 @@ def get_outdated_red_messages(pypi_version: str, py_version_req: str) -> Tuple[s
         "based on your current OS, environment, and Python version")
 
     rich_outdated_message = Text(outdated_red_message, style="bold red")
+    return outdated_red_message, rich_outdated_message
 
 # Example function to create a rainbow gradient text
 def gradient_text(text, colors):
@@ -167,7 +168,7 @@ def init_events(bot, cli_flags):
             return
 
         bot._uptime = discord.utils.utcnow()
-        
+
         guilds = len(bot.guilds)
         users = len(set([m for m in bot.get_all_members()]))
 
@@ -219,6 +220,7 @@ def init_events(bot, cli_flags):
 
         pypi_version, py_version_req = await fetch_latest_red_version_info()
         outdated = pypi_version and pypi_version > red_version_info
+        rich_outdated_message = None  # Initialize the variable
         if outdated:
             outdated_red_message, rich_outdated_message = get_outdated_red_messages(
                 pypi_version, py_version_req
