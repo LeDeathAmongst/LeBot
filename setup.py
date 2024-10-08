@@ -23,7 +23,7 @@ def get_requirements(fp):
     return [
         line.strip()
         for line in fp.read().splitlines()
-        if line.strip() and not line.strip().startswith("#")
+        if line.strip() and not line.strip().startswith("#") and line.strip() != "-c base.txt"
     ]
 
 
@@ -101,4 +101,3 @@ setuptools.setup(
     install_requires=install_requires,
     extras_require=extras_require,
 )
-# Metadata and options defined in pyproject.toml
