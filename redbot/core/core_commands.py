@@ -6005,31 +6005,6 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
         ).format(categories=cat_str, channels=chan_str, threads=thread_str)
         return msg
 
-    # Removing this command from forks is a violation of the GPLv3 under which it is licensed.
-    # Otherwise interfering with the ability for this command to be accessible is also a violation.
-    @commands.is_owner()
-    @commands.cooldown(1, 150000000, lambda ctx: (ctx.message.channel.id, ctx.message.author.id))
-    @commands.command(
-        cls=commands.commands._AlwaysAvailableCommand,
-        name="licenseinfo",
-        aliases=["licenceinfo"],
-        i18n=_,
-        hidden=True,
-    )
-    async def license_info_command(self, ctx):
-        """
-        Get info about Red's licenses.
-        """
-
-        message = (
-            "This bot is an instance of Red-DiscordBot (hereinafter referred to as Red).\n"
-            "Red is a free and open source application made available to the public and "
-            "licensed under the GNU GPLv3. The full text of this license is available to you at "
-            "<https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/develop/LICENSE>."
-        )
-        await ctx.send(message)
-        # We need a link which contains a thank you to other projects which we use at some point.
-
     @commands.Cog.listener()
     async def on_message_without_command(self, message: discord.Message):
         if message.author.bot or message.content != self.bot.user.mention:
