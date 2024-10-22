@@ -195,7 +195,7 @@ class KickBanMixin(MixinMeta):
                     user.id,
                     days,
                 )
-                success_message = _("Done. That felt good.")
+                success_message = _(f"{user.name} has been banned from the server.")
             except discord.Forbidden:
                 return False, _("I'm not allowed to do that.")
             except discord.NotFound:
@@ -361,7 +361,7 @@ class KickBanMixin(MixinMeta):
                 until=None,
                 channel=None,
             )
-            await ctx.send(_("Done. That felt good."))
+            await ctx.send(_(f"{user.name} was kicked from the server."))
 
     @commands.command()
     @commands.guild_only()
