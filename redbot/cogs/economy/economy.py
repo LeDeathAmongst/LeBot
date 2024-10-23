@@ -158,7 +158,16 @@ class Economy(commands.Cog):
 
     @_bank.command()
     async def balance(self, ctx: commands.Context, user: discord.Member = commands.Author):
-        """Show the user's account balance."""
+        """Show the user's account balance.
+
+        Example:
+        - `[p]bank balance`
+        - `[p]bank balance @Twentysix`
+
+        **Arguments**
+
+        - `<user>` The user to check the balance of. If omitted, defaults to your own balance.
+        """
         bal = await bank.get_balance(user)
         currency = await bank.get_currency_name(ctx.guild)
         max_bal = await bank.get_max_balance(ctx.guild)
@@ -171,7 +180,18 @@ class Economy(commands.Cog):
 
     @_bank.command()
     async def transfer(self, ctx: commands.Context, to: discord.Member, amount: int):
-        """Transfer currency to other users."""
+        """Transfer currency to other users.
+
+        This will come out of your balance, so make sure you have enough.
+
+        Example:
+        - `[p]bank transfer @Twentysix 500`
+
+        **Arguments**
+
+        - `<to>` The user to give currency to.
+        - `<amount>` The amount of currency to give.
+        """
         from_ = ctx.author
         currency = await bank.get_currency_name(ctx.guild)
         try:
@@ -308,7 +328,20 @@ class Economy(commands.Cog):
     @commands.command()
     @guild_only_check()
     async def leaderboard(self, ctx: commands.Context, top: int = 10, show_global: bool = False):
-        """Print the leaderboard."""
+        """Print the leaderboard.
+
+        Defaults to top 10.
+
+        Examples:
+        - `[p]leaderboard`
+        - `[p]leaderboard 50` - Shows the top 50 instead of top 10.
+        - `[p]leaderboard 100 yes` - Shows the top 100 from all servers.
+
+        **Arguments**
+
+        - `<top>` How many positions on the leaderboard to show. Defaults to 10 if omitted.
+        - `<show_global>` Whether to include results from all servers. This will default to false unless specified.
+        """
         guild = ctx.guild
         author = ctx.author
         embed_requested = await ctx.embed_requested()
@@ -415,7 +448,15 @@ class Economy(commands.Cog):
     @commands.command()
     @guild_only_check()
     async def slot(self, ctx: commands.Context, bid: int):
-        """Use the slot machine."""
+        """Use the slot machine.
+
+        Example:
+        - `[p]slot 50`
+
+        **Arguments**
+
+        - `<bid>` The amount to bet on the slot machine. Winning payouts are higher when you bet more.
+        """
         author = ctx.author
         guild = ctx.guild
         channel = ctx.channel
