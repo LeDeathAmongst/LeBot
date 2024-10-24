@@ -369,7 +369,7 @@ class Warnings(commands.Cog):
 
     @commands.command()
     @commands.guild_only()
-    @commands.admin_or_permissions(ban_members=True)
+#    @commands.bot_has_permissions(ban_members=True)
     async def warn(
         self,
         ctx: commands.Context,
