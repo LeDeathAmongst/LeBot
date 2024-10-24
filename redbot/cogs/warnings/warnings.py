@@ -386,6 +386,20 @@ class Warnings(commands.Cog):
         or a custom reason if ``[p]warningset allowcustomreasons`` is set.
         """
         guild = ctx.guild
+        bot_member = ctx.guild.me
+
+        # Check if the bot has any moderation permissions
+        has_mod_perms = any([
+            bot_member.guild_permissions.kick_members,
+            bot_member.guild_permissions.ban_members,
+            bot_member.guild_permissions.manage_roles
+        ])
+
+        if not has_mod_perms:
+            # If the bot doesn't have moderation permissions, only warn the user
+            await ctx.send(f"{member.mention} has been warned: {reason}")
+            return
+
         if member == ctx.author:
             return await ctx.send(_("You cannot warn yourself."))
         if member.bot:
