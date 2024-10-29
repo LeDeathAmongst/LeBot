@@ -1337,6 +1337,9 @@ class Red(DynamicShardedBot):
             discord.User,
             discord.Member,
             discord.Thread,
+            discord.DMChannel,
+            discord.GroupChannel,
+            discord.PartialMessageable,
         ],
         *,
         command: Optional[commands.Command] = None,
@@ -1378,26 +1381,14 @@ class Red(DynamicShardedBot):
             scope = self._config.custom(COMMAND_SCOPE, command.qualified_name, guild_id)
             return await scope.embeds()
 
-        # using dpy_commands.Context to keep the Messageable contract in full
-        if isinstance(channel, dpy_commands.Context):
+        if isinstance(channel, commands.Context):
             command = command or channel.command
-            channel = (
-                channel.author
-                if isinstance(channel.channel, discord.DMChannel)
-                else channel.channel
-            )
+            channel = channel.channel
 
-        if isinstance(
-            channel, (discord.GroupChannel, discord.DMChannel, discord.PartialMessageable)
-        ):
-            raise TypeError(
-                "You cannot pass a GroupChannel, DMChannel, or PartialMessageable to this method."
-            )
+        if isinstance(channel, (discord.GroupChannel, discord.DMChannel, discord.PartialMessageable)):
+            return await self._config.embeds()
 
-        if isinstance(
-            channel,
-            (discord.TextChannel, discord.VoiceChannel, discord.StageChannel, discord.Thread),
-        ):
+        if isinstance(channel, (discord.TextChannel, discord.VoiceChannel, discord.StageChannel, discord.Thread)):
             channel_id = channel.parent_id if isinstance(channel, discord.Thread) else channel.id
 
             if check_permissions and not channel.permissions_for(channel.guild.me).embed_links:
@@ -1410,14 +1401,17 @@ class Red(DynamicShardedBot):
             if (command_setting := await get_command_setting(channel.guild.id)) is not None:
                 return command_setting
 
-            if (guild_setting := await self._config.guild(channel.guild).embeds()) is not None:
+            guild_setting = await self._config.guild(channel.guild).embeds()
+            if guild_setting is not None:
                 return guild_setting
         else:
             user = channel
-            if (user_setting := await self._config.user(user).embeds()) is not None:
+            user_setting = await self._config.user(user).embeds()
+            if user_setting is not None:
                 return user_setting
 
-        if (global_command_setting := await get_command_setting(0)) is not None:
+        global_command_setting = await get_command_setting(0)
+        if global_command_setting is not None:
             return global_command_setting
 
         global_setting = await self._config.embeds()
