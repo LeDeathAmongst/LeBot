@@ -4738,7 +4738,7 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
             await ctx.send("I can't send messages to bots.")
             return
 
-        description = f"Owner/Staff of {ctx.me.name)"
+        description = f"Owner/Staff of {ctx.me.name}"
         ctx.message.delete()
         color = await ctx.bot.get_embed_color(user)
         view = ContactDmView(self.contact, ctx.author)
