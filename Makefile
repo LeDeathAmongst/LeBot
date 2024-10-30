@@ -1,13 +1,14 @@
 .DEFAULT_GOAL := help
 
-PYTHON ?= python3.10
+# Change this line to use $(PYTHON) instead of hardcoding python3.10
+PYTHON ?= python
 
 ROOT_DIR:=$(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 
 ifneq ($(wildcard $(ROOT_DIR)/.venv/.),)
-	VENV_PYTHON = $(ROOT_DIR)/.venv/bin/python
+VENV_PYTHON = $(ROOT_DIR)/.venv/bin/python
 else
-	VENV_PYTHON = $(PYTHON)
+VENV_PYTHON = $(PYTHON)
 endif
 
 define HELP_BODY
