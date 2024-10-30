@@ -780,7 +780,8 @@ class ContactDmReplyModal(discord.ui.Modal):
         destination = self.destination
 
         description = _("Owner of {}").format(bot.user)
-        content = _("You can reply to this message with {}contact").format(await bot.get_valid_prefixes()[0])
+        prefixes = await bot.get_valid_prefixes()
+        content = _("You can reply to this message with {}contact").format(prefixes[0])
 
         if await bot.embed_requested(destination):
             e = discord.Embed(colour=await bot.get_embed_color(destination), description=message)
