@@ -4811,34 +4811,19 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
             )
             return
 
-        prefixes = await ctx.bot.get_valid_prefixes()
-        prefix = re.sub(rf"<@!?{ctx.me.id}>", f"@{ctx.me.name}".replace("\\", r"\\"), prefixes[0])
         description = _("Owner of {}").format(ctx.bot.user)
-        content = _("You can reply to this message with {}contact").format(prefix)
-        if await ctx.embed_requested():
-            e = discord.Embed(colour=await ctx.embed_colour(), description=message)
+        color = await ctx.bot.get_embed_color(destination)
+        view = ContactDmView(self.contact, ctx.author)
+        e = discord.Embed(colour=color, description=message)
+        e.set_footer(text=_("You can reply to this message with the button below."))
+        e.set_author(name=description, icon_url=ctx.bot.user.display_avatar)
 
-            e.set_footer(text=content)
-            e.set_author(name=description, icon_url=ctx.bot.user.display_avatar)
-
-            try:
-                await destination.send(embed=e)
-            except discord.HTTPException:
-                await ctx.send(
-                    _("Sorry, I couldn't deliver your message to {}").format(destination)
-                )
-            else:
-                await ctx.send(_("Message delivered to {}").format(destination))
+        try:
+            await destination.send(embed=e, view=view)
+        except discord.HTTPException:
+            await ctx.send(_("Sorry, I couldn't deliver your message to {}").format(destination))
         else:
-            response = "{}\nMessage:\n\n{}".format(description, message)
-            try:
-                await destination.send("{}\n{}".format(box(response), content))
-            except discord.HTTPException:
-                await ctx.send(
-                    _("Sorry, I couldn't deliver your message to {}").format(destination)
-                )
-            else:
-                await ctx.send(_("Message delivered to {}").format(destination))
+            await ctx.send(_("Message delivered to {}").format(destination))
 
     @commands.command(hidden=True)
     @commands.is_owner()
