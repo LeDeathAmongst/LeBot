@@ -1,37 +1,10 @@
-# Warning: The implementation below touches several private attributes.
-# While this implementation will be updated, and public interfaces maintained,
-# derived classes should not assume these private attributes are version safe,
-# and use the provided HelpSettings class for these settings.
-
-# This is a full replacement of discord.py's help command
-#
-# This exists due to deficiencies in discord.py which conflict
-# with our needs for per-context help settings
-# see https://github.com/Rapptz/discord.py/issues/2123
-#
-# While the issue above discusses this as theoretical, merely interacting with config within
-# the help command preparation was enough to cause
-# demonstrable breakage in 150 help invokes in a 2 minute window.
-# This is not an unreasonable volume on some already existing Red instances,
-# especially since help is invoked for command groups
-# automatically when subcommands are not provided correctly as user feedback.
-#
-# The implemented fix is in
-# https://github.com/Rapptz/discord.py/commit/ad5beed8dd75c00bd87492cac17fe877033a3ea1
-#
-# While this fix would handle our immediate specific issues, it's less appropriate to use
-# Where we do not have a downstream consumer to consider.
-# Simply modifying the design to not be susceptible to the issue,
-# rather than adding copy and deepcopy use in multiple places is better for us
-#
-# Additionally, this gives our users a bit more customization options including by
-# 3rd party cogs down the road.
-
 import abc
 import asyncio
 from collections import namedtuple
 from dataclasses import dataclass, asdict as dc_asdict
 from enum import Enum
+from rapidfuzz import process
+from rich.markup import escape
 from typing import Union, List, AsyncIterator, Iterable, cast
 
 import discord
@@ -45,6 +18,7 @@ from ..utils import can_user_react_in, menus
 from ..utils.mod import mass_purge
 from ..utils._internal_utils import fuzzy_command_search, format_fuzzy_results
 from ..utils.chat_formatting import (
+    ansify,
     bold,
     box,
     humanize_list,
@@ -59,13 +33,10 @@ __all__ = ["red_help", "RedHelpFormatter", "HelpSettings", "HelpFormatterABC"]
 _ = Translator("Help", __file__)
 
 HelpTarget = Union[commands.Command, commands.Group, commands.Cog, dpy_commands.bot.BotBase, str]
-
-# The below could be a protocol if we pulled in typing_extensions from mypy.
 SupportsCanSee = Union[commands.Command, commands.Group, dpy_commands.bot.BotBase, commands.Cog]
 
 EmbedField = namedtuple("EmbedField", "name value inline")
 EMPTY_STRING = "\N{ZERO WIDTH SPACE}"
-
 
 class HelpMenuSetting(Enum):
     disabled = 0
@@ -74,18 +45,8 @@ class HelpMenuSetting(Enum):
     select = 3
     selectonly = 4
 
-
 @dataclass(frozen=True)
 class HelpSettings:
-    """
-    A representation of help settings.
-
-    .. warning::
-
-        This class is `provisional <developer-guarantees-exclusions>`.
-
-    """
-
     page_char_limit: int = 1000
     max_pages_in_guild: int = 2
     use_menus: HelpMenuSetting = HelpMenuSetting(0)
@@ -98,28 +59,14 @@ class HelpSettings:
     use_tick: bool = False
     react_timeout: int = 30
 
-    # Contrib Note: This is intentional to not accept the bot object
-    # There are plans to allow guild and user specific help settings
-    # Adding a non-context based method now would involve a breaking
-    # change later.
-    # At a later date, more methods should be exposed for
-    # non-context based creation.
-    #
-    # This is also why we aren't just caching the
-    # current state of these settings on the bot object.
     @classmethod
     async def from_context(cls, context: Context):
-        """
-        Get the HelpSettings for the current context
-        """
         settings = await context.bot._config.help.all()
         menus = settings.pop("use_menus", 0)
         return cls(**settings, use_menus=HelpMenuSetting(menus))
 
     @property
     def pretty(self):
-        """Returns a discord safe representation of the settings"""
-
         def bool_transformer(val):
             if val is False:
                 return _("No")
@@ -163,89 +110,25 @@ class HelpSettings:
             "{tagline_info}"
         ).format_map(data)
 
-
 class NoCommand(Exception):
     pass
-
 
 class NoSubCommand(Exception):
     def __init__(self, *, last, not_found):
         self.last = last
         self.not_found = not_found
 
-
 class HelpFormatterABC(abc.ABC):
-    """
-    Describes the required interface of a help formatter.
-
-    Additional notes for 3rd party developers are included in this class.
-
-    .. note::
-        You may define __init__ however you want
-        (such as to include config),
-        Red will not initialize a formatter for you,
-        and must be passed an initialized formatter.
-
-        If you want to use Red's existing settings, use ``HelpSettings.from_context``
-
-    .. warning::
-
-        This class is documented but `provisional <developer-guarantees-exclusions>` with expected changes.
-
-        In the future, this class will receive changes to support
-        invoking the help command without context.
-    """
-
     @abc.abstractmethod
     async def send_help(
         self, ctx: Context, help_for: HelpTarget = None, *, from_help_command: bool = False
     ):
-        """
-        This is (currently) the only method you must implement.
-
-        This method should handle any and all errors which may arise.
-
-        The types subclasses must handle are defined as ``HelpTarget``
-        """
         ...
 
-
 class RedHelpFormatter(HelpFormatterABC):
-    """
-    Red's help implementation
-
-    This is intended to be overridable in parts to only change some behavior.
-
-    While this exists as a class for easy partial overriding,
-    most implementations should not need or want a shared state.
-
-    .. warning::
-
-        This class is documented but may receive changes between
-        versions without warning as needed.
-        The supported way to modify help is to write a separate formatter.
-
-        The primary reason for this class being documented is to allow
-        the opaque use of the class as a fallback, as any method in base
-        class which is intended for use will be present and implemented here.
-
-    .. note::
-
-        This class may use various internal methods which are not safe to
-        use in third party code.
-        The internal methods used here may change,
-        with this class being updated at the same time.
-    """
-
     async def send_help(
         self, ctx: Context, help_for: HelpTarget = None, *, from_help_command: bool = False
     ):
-        """
-        This delegates to other functions.
-
-        For most cases, you should use this and only this directly.
-        """
-
         help_settings = await HelpSettings.from_context(ctx)
 
         if help_for is None or isinstance(help_for, dpy_commands.bot.BotBase):
@@ -316,6 +199,8 @@ class RedHelpFormatter(HelpFormatterABC):
 
     @staticmethod
     def get_command_signature(ctx: Context, command: commands.Command) -> str:
+        syntax_fmt = "Syntax:"
+        prefix = escape(ctx.clean_prefix)
         parent = command.parent
         entries = []
         while parent is not None:
@@ -325,8 +210,49 @@ class RedHelpFormatter(HelpFormatterABC):
                 entries.append(parent.name + " " + parent.signature)
             parent = parent.parent
         parent_sig = (" ".join(reversed(entries)) + " ") if entries else ""
+        signatures = [
+            f"[purple]{syntax_fmt}[/]",
+            f"[blue]{prefix}[/][green]{parent_sig}{command.name}[/]",
+            f"[bold cyan]{escape(command.signature)}[/]",
+        ]
+        return ansify(" ".join(signatures))
 
-        return f"{ctx.clean_prefix}{parent_sig}{command.name} {command.signature}"
+    @staticmethod
+    def get_perms(command):
+        final_perms = ""
+        neat_format = lambda x: " ".join(i.capitalize() for i in x.replace("_", " ").split())
+
+        user_perms = []
+        if perms := getattr(command.requires, "user_perms"):
+            user_perms.extend(neat_format(i) for i, j in perms if j)
+        if perms := command.requires.privilege_level:
+            if perms.name != "NONE":
+                user_perms.append(neat_format(perms.name))
+
+        if user_perms:
+            final_perms += "User Permission(s): " + ", ".join(user_perms) + "\n"
+
+        if perms := getattr(command.requires, "bot_perms"):
+            if perms_list := ", ".join(neat_format(i) for i, j in perms if j):
+                final_perms += "Bot Permission(s): " + perms_list
+
+        return final_perms
+
+    @staticmethod
+    def get_cooldowns(command):
+        cooldowns = []
+        if s := command._buckets._cooldown:
+            txt = f"{s.rate} time{'s' if s.rate>1 else ''} in {humanize_timedelta(seconds=s.per)}"
+            try:
+                txt += f" per {s.type.name.capitalize()}"
+            except AttributeError:
+                pass
+            cooldowns.append(txt)
+
+        if s := command._max_concurrency:
+            cooldowns.append(f"Max concurrent uses: {s.number} per {s.per.name.capitalize()}")
+
+        return cooldowns
 
     async def format_command_help(
         self, ctx: Context, obj: commands.Command, help_settings: HelpSettings
@@ -336,12 +262,6 @@ class RedHelpFormatter(HelpFormatterABC):
             async for __ in self.help_filter_func(
                 ctx, (obj,), bypass_hidden=True, help_settings=help_settings
             ):
-                # This is a really lazy option for not
-                # creating a separate single case version.
-                # It is efficient though
-                #
-                # We do still want to bypass the hidden requirement on
-                # a specific command explicitly invoked here.
                 send = True
 
         if not send:
@@ -352,9 +272,7 @@ class RedHelpFormatter(HelpFormatterABC):
         description = command.description or ""
 
         tagline = self.format_tagline(ctx, help_settings.tagline) or self.get_default_tagline(ctx)
-        signature = _("Syntax: {command_signature}").format(
-            command_signature=self.get_command_signature(ctx, command)
-        )
+        signature = self.get_command_signature(ctx, command)
 
         aliases = command.aliases
         if help_settings.show_aliases and aliases:
@@ -371,7 +289,7 @@ class RedHelpFormatter(HelpFormatterABC):
 
             a_diff = len(aliases) - len(valid_alias_list)
             aliases_list = [
-                f"{ctx.clean_prefix}{command.parent.qualified_name + ' ' if command.parent else ''}{alias}"
+                f"[blue]{ctx.clean_prefix}[/][green]{command.parent.qualified_name + ' ' if command.parent else ''}{alias}[/]"
                 for alias in valid_alias_list
             ]
             if len(valid_alias_list) < 10:
@@ -379,14 +297,22 @@ class RedHelpFormatter(HelpFormatterABC):
             else:
                 aliases_formatted_list = ", ".join(aliases_list)
                 if a_diff > 1:
-                    aliases_content = _("{aliases} and {number} more aliases.").format(
+                    aliases_content = "{aliases} and [bold cyan]{number}[/] more aliases.".format(
                         aliases=aliases_formatted_list, number=humanize_number(a_diff)
                     )
                 else:
-                    aliases_content = _("{aliases} and one more alias.").format(
+                    aliases_content = "{aliases} and [bold cyan]1[/] more alias.".format(
                         aliases=aliases_formatted_list
                     )
-            signature += f"\n{alias_fmt}: {aliases_content}"
+            signature += ansify(f"[purple]{alias_fmt}[/] {aliases_content}")
+
+        perms = self.get_perms(command)
+        if perms:
+            signature += f"\n\nPermissions:\n{perms}"
+
+        cooldowns = self.get_cooldowns(command)
+        if cooldowns:
+            signature += f"\n\nCooldowns:\n" + "\n".join(cooldowns)
 
         subcommands = None
         if hasattr(command, "all_commands"):
@@ -400,7 +326,7 @@ class RedHelpFormatter(HelpFormatterABC):
                 emb["embed"]["title"] = f"*{description[:250]}*"
 
             emb["footer"]["text"] = tagline
-            emb["embed"]["description"] = box(signature)
+            emb["embed"]["description"] = box(signature, lang="ansi")
 
             command_help = command.format_help_for_context(ctx)
             if command_help:
@@ -424,14 +350,16 @@ class RedHelpFormatter(HelpFormatterABC):
                         return a_line
                     return a_line[:67].rstrip() + "..."
 
+                spacing = len(max(subcommands.keys(), key=len))
                 subtext = "\n".join(
-                    shorten_line(f"**{name}** {command.format_shortdoc_for_context(ctx)}")
+                    shorten_line(
+                        f"`{name:<{spacing}} :`{command.format_shortdoc_for_context(ctx)}"
+                    )
                     for name, command in sorted(subcommands.items())
                 )
-                for i, page in enumerate(pagify(subtext, page_length=500, shorten_by=0)):
-                    title = bold(underline(_("Subcommands:")), escape_formatting=False)
-                    field = EmbedField(title, page, False)
-                    emb["fields"].append(field)
+                for i, page in enumerate(pagify(subtext, page_length=512, shorten_by=0)):
+                    title = underline(_("Subcommands")) if i == 0 else EMPTY_STRING
+                    emb["fields"].append(EmbedField(title, page, False))
 
             await self.make_and_send_embeds(ctx, emb, help_settings=help_settings)
 
@@ -595,16 +523,18 @@ class RedHelpFormatter(HelpFormatterABC):
                 def shorten_line(a_line: str) -> str:
                     if len(a_line) < 70:  # embed max width needs to be lower
                         return a_line
-                    return a_line[:67].rstrip() + "..."
+                    return a_line[:67] + "..."
 
+                spacing = len(max(coms.keys(), key=len))
                 command_text = "\n".join(
-                    shorten_line(f"{bold(name)} {command.format_shortdoc_for_context(ctx)}")
+                    shorten_line(
+                        f"`{name:<{spacing}} :`{command.format_shortdoc_for_context(ctx)}"
+                    )
                     for name, command in sorted(coms.items())
                 )
-                for i, page in enumerate(pagify(command_text, page_length=500, shorten_by=0)):
-                    title = underline(bold(_("Commands:")), escape_formatting=False)
-                    field = EmbedField(title, page, False)
-                    emb["fields"].append(field)
+                for i, page in enumerate(pagify(command_text, page_length=512, shorten_by=0)):
+                    title = underline(_("Commands")) if i == 0 else EMPTY_STRING
+                    emb["fields"].append(EmbedField(title, page, False))
 
             await self.make_and_send_embeds(ctx, emb, help_settings=help_settings)
 
@@ -649,24 +579,26 @@ class RedHelpFormatter(HelpFormatterABC):
 
             for cog_name, data in coms:
                 if cog_name:
-                    title = underline(bold(f"{cog_name}:"), escape_formatting=False)
+                    title = underline(f"{cog_name}", escape_formatting=False)
                 else:
-                    title = underline(bold(_("No Category:")), escape_formatting=False)
+                    title = underline(_("No Category"), escape_formatting=False)
 
                 def shorten_line(a_line: str) -> str:
                     if len(a_line) < 70:  # embed max width needs to be lower
                         return a_line
                     return a_line[:67].rstrip() + "..."
 
+                spacing = len(max(data.keys(), key=len))
                 cog_text = "\n".join(
-                    shorten_line(f"**{name}** {command.format_shortdoc_for_context(ctx)}")
+                    shorten_line(
+                        f"`{name:<{spacing}} :`{command.format_shortdoc_for_context(ctx)}"
+                    )
                     for name, command in sorted(data.items())
                 )
 
-                for i, page in enumerate(pagify(cog_text, page_length=1000, shorten_by=0)):
-                    title = title if i < 1 else _("{title} (continued)").format(title=title)
-                    field = EmbedField(title, page, False)
-                    emb["fields"].append(field)
+                for i, page in enumerate(pagify(cog_text, page_length=1024, shorten_by=0)):
+                    title = title if i == 0 else EMPTY_STRING
+                    emb["fields"].append(EmbedField(title, page, False))
 
             await self.make_and_send_embeds(ctx, emb, help_settings=help_settings)
 
