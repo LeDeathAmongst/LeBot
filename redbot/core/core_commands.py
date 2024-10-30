@@ -4706,49 +4706,25 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
 
         description = _("Sent by {} {}").format(author, source)
 
-        prefixes = await ctx.bot.get_valid_prefixes()
-        prefix = re.sub(rf"<@!?{ctx.me.id}>", f"@{ctx.me.name}".replace("\\", r"\\"), prefixes[0])
-        content = _("You can reply to this message with the button below.")
+        embed = discord.Embed(
+            color=await ctx.embed_color(),
+            description=message,
+        )
+        embed.set_author(name=description, icon_url=author.display_avatar)
+        embed.set_footer(text=footer)
 
         successful = False
         view = ContactDmView(self.dm, author)
 
         for destination in destinations:
-            is_dm = isinstance(destination, discord.User)
-            if not is_dm and not destination.permissions_for(destination.guild.me).send_messages:
+            try:
+                if isinstance(destination, discord.User):
+                    await destination.send(embed=embed, view=view)
+                else:
+                    await destination.send(embed=embed, view=view)
+                successful = True
+            except discord.HTTPException:
                 continue
-
-            if await ctx.bot.embed_requested(destination, command=ctx.command):
-                color = await ctx.bot.get_embed_color(destination)
-                e = discord.Embed(colour=color, description=message)
-                e.set_author(name=description, icon_url=author.display_avatar)
-                e.set_footer(text=f"{footer}\n{content}")
-
-                try:
-                    await destination.send(embed=e, view=view)
-                except discord.Forbidden:
-                    log.exception(f"Contact failed to {destination}({destination.id})")
-                except discord.HTTPException:
-                    log.exception(
-                        f"An unexpected error happened while attempting to"
-                        f" send contact to {destination}({destination.id})"
-                    )
-                else:
-                    successful = True
-            else:
-                msg_text = "{}\nMessage:\n\n{}\n{}".format(description, message, footer)
-
-                try:
-                    await destination.send("{}\n{}".format(content, box(msg_text)))
-                except discord.Forbidden:
-                    log.exception(f"Contact failed to {destination}({destination.id})")
-                except discord.HTTPException:
-                    log.exception(
-                        f"An unexpected error happened while attempting to"
-                        f" send contact to {destination}({destination.id})"
-                    )
-                else:
-                    successful = True
 
         if successful:
             await ctx.send(_("Your message has been sent."), ephemeral=True)
@@ -4771,44 +4747,41 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
         **Arguments:**
         - `[message]` - The message to dm to the user.
         """
-        destination = self.bot.get_user(user_id)
-        if destination is None or destination.bot:
-            await ctx.send(
-                _(
-                    "Invalid ID, user not found, or user is a bot. "
-                    "You can only send messages to people I share "
-                    "a server with."
-                )
-            )
+        destinations = await ctx.bot.get_owner_notification_destinations()
+        if not destinations:
+            await ctx.send(_("I've been configured not to send this anywhere."), ephemeral=True)
             return
 
-        description = _("Owner of {}").format(ctx.bot.user)
-        color = await ctx.bot.get_embed_color(destination)
-        view = ContactDmView(self.contact, ctx.author)
+        user = self.bot.get_user(user_id)
+        if user is None:
+            await ctx.send(_("I couldn't find a user with that ID."), ephemeral=True)
+            return
 
-        prefixes = await ctx.bot.get_valid_prefixes()
-        prefix = re.sub(rf"<@!?{ctx.me.id}>", f"@{ctx.me.name}".replace("\\", r"\\"), prefixes[0])
-        content = _("You can reply to this message with {}contact").format(prefix)
+        description = _("Message from {}").format(ctx.author)
+        footer = _("User ID: {}").format(ctx.author.id)
 
-        if await ctx.embed_requested():
-            e = discord.Embed(colour=color, description=message)
-            e.set_footer(text=_("You can reply to this message with the button below."))
-            e.set_author(name=description, icon_url=ctx.bot.user.display_avatar)
+        embed = discord.Embed(
+            color=await ctx.embed_color(),
+            description=message,
+        )
+        embed.set_author(name=description, icon_url=ctx.author.display_avatar)
+        embed.set_footer(text=footer)
 
+        successful = False
+        view = ContactDmView(self.contact, user)
+
+        for destination in destinations:
             try:
-                await destination.send(embed=e, view=view)
+                await destination.send(embed=embed, view=view)
+                successful = True
             except discord.HTTPException:
-                await ctx.send(_("Sorry, I couldn't deliver your message to {}").format(destination))
-            else:
-                await ctx.send(_("Message delivered to {}").format(destination))
+                continue
+
+        if successful:
+            await ctx.send(_("Your message has been sent."), ephemeral=True)
         else:
-            response = "{}\nMessage:\n\n{}".format(description, message)
-            try:
-                await destination.send("{}\n{}".format(box(response), content))
-            except discord.HTTPException:
-                await ctx.send(_("Sorry, I couldn't deliver your message to {}").format(destination))
-            else:
-                await ctx.send(_("Message delivered to {}").format(destination))
+            await ctx.send(_("I'm unable to deliver your message. Sorry."), ephemeral=True)
+
     @commands.command(hidden=True)
     @commands.is_owner()
     async def datapath(self, ctx: commands.Context):
