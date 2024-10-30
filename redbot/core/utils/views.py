@@ -280,6 +280,7 @@ class SimpleMenu(discord.ui.View):
             user: discord.User
                 The user allowed to interact with the menu.
                 If this is ``None``, ``ctx.author`` will be able to interact with the menu.
+
                 .. warning::
                     This parameter is `provisional <developer-guarantees-exclusions>`.
                     If no issues arise, we plan on including it under developer guarantees
