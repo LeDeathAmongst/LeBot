@@ -4783,7 +4783,7 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
         e.set_footer(text="You can reply to this message with the button below.")
         e.set_author(name=description, icon_url=ctx.author.display_avatar.url)
         try:
-            await destination.send(embed=e)
+            await destination.send(embed=e, view=view)
         except discord.HTTPException:
             await ctx.send(
                 _("Sorry, I couldn't deliver your message to {}").format(destination)
