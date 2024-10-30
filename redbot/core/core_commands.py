@@ -4703,8 +4703,9 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
 
     @commands.hybrid_command(cooldown_after_parsing=True)
     @commands.cooldown(1, 60, commands.BucketType.user)
+    @app_commands.describe(message="The message to send to the owners.")
     async def contact(self, ctx: commands.Context, *, message: str):
-        """Sends a message to the owner.
+        """Sends a message to the owners.
 
         This is limited to one message every 60 seconds per person.
 
@@ -4712,32 +4713,31 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
         - `[p]contact Help! The bot has become sentient!`
 
         **Arguments:**
-        - `[message]` - The message to send to the owner.
+        - `[message]` - The message to send to the owners.
         """
-        guild = ctx.message.guild
-        author = ctx.message.author
+        destinations = await ctx.bot.get_owner_notification_destinations()
+        if not destinations:
+            await ctx.send(_("I've been configured not to send this anywhere."), ephemeral=True)
+            return
+
+        guild = ctx.guild
+        author = ctx.author
         footer = _("User ID: {}").format(author.id)
 
-        if ctx.guild is None:
+        if guild is None:
             source = _("through DM")
         else:
             source = _("from {}").format(guild)
             footer += _(" | Server ID: {}").format(guild.id)
 
-        prefixes = await ctx.bot.get_valid_prefixes()
-        prefix = re.sub(rf"<@!?{ctx.me.id}>", f"@{ctx.me.name}".replace("\\", r"\\"), prefixes[0])
-
-        content = _("Use `{}dm {} <text>` to reply to this user").format(prefix, author.id)
-
         description = _("Sent by {} {}").format(author, source)
 
-        destinations = await ctx.bot.get_owner_notification_destinations()
-
-        if not destinations:
-            await ctx.send(_("I've been configured not to send this anywhere."))
-            return
+        prefixes = await ctx.bot.get_valid_prefixes()
+        prefix = re.sub(rf"<@!?{ctx.me.id}>", f"@{ctx.me.name}".replace("\\", r"\\"), prefixes[0])
+        content = _("You can reply to this message with the button below.")
 
         successful = False
+        view = ContactDmView(self.dm, author)
 
         for destination in destinations:
             is_dm = isinstance(destination, discord.User)
@@ -4746,16 +4746,14 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
 
             if await ctx.bot.embed_requested(destination, command=ctx.command):
                 color = await ctx.bot.get_embed_color(destination)
-
                 e = discord.Embed(colour=color, description=message)
                 e.set_author(name=description, icon_url=author.display_avatar)
                 e.set_footer(text=f"{footer}\n{content}")
 
                 try:
-                    await destination.send(embed=e)
+                    await destination.send(embed=e, view=view)
                 except discord.Forbidden:
                     log.exception(f"Contact failed to {destination}({destination.id})")
-                    # Should this automatically opt them out?
                 except discord.HTTPException:
                     log.exception(
                         f"An unexpected error happened while attempting to"
@@ -4770,7 +4768,6 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
                     await destination.send("{}\n{}".format(content, box(msg_text)))
                 except discord.Forbidden:
                     log.exception(f"Contact failed to {destination}({destination.id})")
-                    # Should this automatically opt them out?
                 except discord.HTTPException:
                     log.exception(
                         f"An unexpected error happened while attempting to"
@@ -4780,9 +4777,9 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
                     successful = True
 
         if successful:
-            await ctx.send(_("Your message has been sent."))
+            await ctx.send(_("Your message has been sent."), ephemeral=True)
         else:
-            await ctx.send(_("I'm unable to deliver your message. Sorry."))
+            await ctx.send(_("I'm unable to deliver your message. Sorry."), ephemeral=True)
 
     @commands.command()
     @commands.has_permissions(administrator=True)
