@@ -329,9 +329,6 @@
 "Category: Cogs - RandomEmoji":
   - redbot/cogs/randomemoji/*
 
-"Category: Core - Core Commands Backup":
-  - redbot/core/core_commands.py.save
-
 # "Category: RPC/ZMQ methods": []  # can't be matched by file patterns
 
 
