@@ -8,6 +8,7 @@ from redbot.core import commands
 from redbot.core.commands import get_dict_converter
 from redbot.core.i18n import Translator
 from redbot.vendored.discord.ext import menus
+from redbot.core.utils.chat_formatting import box
 
 if TYPE_CHECKING:
     from redbot.core.bot import Red
