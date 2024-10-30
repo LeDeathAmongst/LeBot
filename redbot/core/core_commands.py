@@ -4675,104 +4675,82 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
         await ctx.bot._config.help.tagline.set(tagline)
         await ctx.send(_("The tagline has been set."))
 
-    @commands.hybrid_command(cooldown_after_parsing=True)
-    @commands.cooldown(1, 60, commands.BucketType.user)
+    @commands.hybrid_command()
     @app_commands.describe(message="The message to send to the owners.")
     async def contact(self, ctx: commands.Context, *, message: str):
-        """Sends a message to the owners.
-
-        This is limited to one message every 60 seconds per person.
+        """
+        Sends a message to the owners.
 
         **Example:**
-        - `[p]contact Help! The bot has become sentient!`
+        - `[p]contact Unblock me pls :(`
 
         **Arguments:**
-        - `[message]` - The message to send to the owners.
+        - `<message>` - The message to send to the owners.
         """
         destinations = await ctx.bot.get_owner_notification_destinations()
         if not destinations:
-            await ctx.send(_("I've been configured not to send this anywhere."), ephemeral=True)
+            await ctx.send("I've been configured not to send this anywhere.", ephemeral=True)
             return
 
         guild = ctx.guild
         author = ctx.author
-        footer = _("User ID: {}").format(author.id)
+        footer = f"User ID: {author.id}" + (f" | Server ID: {guild.id}" if guild else "")
+        source = f"from {guild.name}" if guild else "through DM"
+        description = "Sent by {} {}".format(author, source)
 
-        if guild is None:
-            source = _("through DM")
-        else:
-            source = _("from {}").format(guild)
-            footer += _(" | Server ID: {}").format(guild.id)
+        successful = []
 
-        description = _("Sent by {} {}").format(author, source)
-
-        embed = discord.Embed(
-            color=await ctx.embed_color(),
-            description=message,
-        )
-        embed.set_author(name=description, icon_url=author.display_avatar)
-        embed.set_footer(text=footer)
-
-        successful = False
         view = ContactDmView(self.dm, author)
-
         for destination in destinations:
-            try:
-                if isinstance(destination, discord.User):
-                    await destination.send(embed=embed, view=view)
-                else:
-                    await destination.send(embed=embed, view=view)
-                successful = True
-            except discord.HTTPException:
+            is_dm = isinstance(destination, discord.User)
+            if not is_dm and not destination.permissions_for(destination.guild.me).send_messages:
                 continue
 
-        if successful:
-            await ctx.send(_("Your message has been sent."), ephemeral=True)
-        else:
-            await ctx.send(_("I'm unable to deliver your message. Sorry."), ephemeral=True)
+            color = await ctx.bot.get_embed_color(destination)
+            e = discord.Embed(color=color, description=message)
+            e.set_author(name=description, icon_url=author.display_avatar.url)
+            e.set_footer(text=f"{footer}\nYou can reply to this message with the button below.")
+
+            try:
+                await destination.send(embed=e, view=view)
+            except (discord.Forbidden, discord.HTTPException):
+                successful.append(False)
+            else:
+                successful.append(True)
+
+        if True in successful:
+            await ctx.send("Your message has been sent.", ephemeral=True)
+            return
+        await ctx.send("Sorry, I'm unable to send your message.", ephemeral=True)
 
     @commands.command()
-    @commands.has_permissions(administrator=True)
-    async def dm(self, ctx: commands.Context, user_id: int, *, message: str):
+    @commands.is_owner()
+    async def dm(self, ctx: commands.Context, user: discord.User, *, message: str):
         """Sends a DM to a user.
 
-        This command needs a user ID to work.
-
-        To get a user ID, go to Discord's settings and open the 'Appearance' tab.
-        Enable 'Developer Mode', then right click a user and click on 'Copy ID'.
-
         **Example:**
-        - `[p]dm 262626262626262626 Do you like me? Yes / No`
+        - `[p]dm 732425670856147075 I love you <3`
 
         **Arguments:**
-        - `[message]` - The message to dm to the user.
+        - `<message>` - The message to dm to the user.
         """
-        user = self.bot.get_user(user_id)
-        if user is None:
-            await ctx.send(_("I couldn't find a user with that ID."), ephemeral=True)
-            return
-
         if user.bot:
-            await ctx.send(_("I can't send messages to bots."), ephemeral=True)
+            await ctx.send("I can't send messages to bots.")
             return
 
-        description = _("Owner of {}").format(self.bot.user.name)
-        footer = _("If you wish to reply, use the button below.")
-
-        embed = discord.Embed(
-            color=await ctx.embed_color(),
-            description=message,
-        )
-        embed.set_author(name=description, icon_url=self.bot.user.display_avatar)
-        embed.set_footer(text=footer)
-
-        view = ContactDmView(self.contact, user)
-
+        description = f"Owner/Staff of {ctx.me.name)"
+        ctx.message.delete()
+        color = await ctx.bot.get_embed_color(user)
+        view = ContactDmView(self.contact, ctx.author)
+        e = discord.Embed(color=color, description=message)
+        e.set_footer(text="You can reply to this message with the button below.")
+        e.set_author(name=description, icon_url=ctx.author.display_avatar.url)
         try:
-            await user.send(embed=embed, view=view)
-            await ctx.send(_("Your message has been sent to the user."), ephemeral=True)
+            await user.send(embed=e, view=view)
         except discord.HTTPException:
-            await ctx.send(_("I couldn't send a message to that user. They may have DMs disabled or have blocked me."), ephemeral=True)
+            await ctx.send("Sorry, I couldn't deliver your message to {}".format(user))
+        else:
+            await ctx.send("Your message has been sent to {}.".format(user))
 
     @commands.command(hidden=True)
     @commands.is_owner()
