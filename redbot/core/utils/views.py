@@ -714,66 +714,106 @@ class ContactDmReplyModal(discord.ui.Modal):
 
         destinations = await bot.get_owner_notification_destinations()
         if not destinations:
-            await interaction.response.send_message("I've been configured not to send this anywhere.", ephemeral=True)
+            await interaction.response.send_message(_("I've been configured not to send this anywhere."), ephemeral=True)
             return
 
         guild = interaction.guild
-        footer = f"User ID: {author.id}" + (f" | Server ID: {guild.id}" if guild else "")
-        source = f"from {guild.name}" if guild else "through DM"
-        description = f"Sent by {author} {source}"
+        footer = _("User ID: {}").format(author.id)
+        if guild:
+            source = _("from {}").format(guild)
+            footer += _(" | Server ID: {}").format(guild.id)
+        else:
+            source = _("through DM")
 
-        successful = []
-        view = ContactDmView(bot.get_command("dm"), author)
+        prefixes = await bot.get_valid_prefixes()
+        prefix = re.sub(rf"<@!?{bot.user.id}>", f"@{bot.user.name}".replace("\\", r"\\"), prefixes[0])
+        content = _("Use `{}dm {} <text>` to reply to this user").format(prefix, author.id)
+        description = _("Sent by {} {}").format(author, source)
+
+        successful = False
 
         for destination in destinations:
             is_dm = isinstance(destination, discord.User)
             if not is_dm and not destination.permissions_for(destination.guild.me).send_messages:
                 continue
 
-            embed = discord.Embed(color=await bot.get_embed_color(destination), description=message)
-            embed.set_author(name=description, icon_url=author.display_avatar.url)
-            embed.set_footer(text=f"{footer}\nYou can reply to this message with the button below or /dm.")
+            if await bot.embed_requested(destination):
+                color = await bot.get_embed_color(destination)
+                e = discord.Embed(colour=color, description=message)
+                e.set_author(name=description, icon_url=author.display_avatar)
+                e.set_footer(text=f"{footer}\n{content}")
+                view = ContactDmView(bot.get_command("dm"), author)
 
-            try:
-                await destination.send(embed=embed, view=view)
-            except (discord.Forbidden, discord.HTTPException):
-                successful.append(False)
+                try:
+                    await destination.send(embed=e, view=view)
+                except discord.Forbidden:
+                    log.exception(f"Contact failed to {destination}({destination.id})")
+                except discord.HTTPException:
+                    log.exception(
+                        f"An unexpected error happened while attempting to"
+                        f" send contact to {destination}({destination.id})"
+                    )
+                else:
+                    successful = True
             else:
-                successful.append(True)
+                msg_text = "{}\nMessage:\n\n{}\n{}".format(description, message, footer)
+                try:
+                    await destination.send("{}\n{}".format(content, box(msg_text)))
+                except discord.Forbidden:
+                    log.exception(f"Contact failed to {destination}({destination.id})")
+                except discord.HTTPException:
+                    log.exception(
+                        f"An unexpected error happened while attempting to"
+                        f" send contact to {destination}({destination.id})"
+                    )
+                else:
+                    successful = True
 
-        if True in successful:
-            await interaction.response.send_message("Your message has been sent.", ephemeral=True)
+        if successful:
+            await interaction.response.send_message(_("Your message has been sent."), ephemeral=True)
         else:
-            await interaction.response.send_message("Sorry, I'm unable to send your message.", ephemeral=True)
+            await interaction.response.send_message(_("I'm unable to deliver your message. Sorry."), ephemeral=True)
 
     async def dm(self, interaction: discord.Interaction, message: str):
         author = interaction.user
         bot: "Red" = interaction.client
+        destination = self.destination
 
-        destinations = await bot.get_owner_notification_destinations()
-        if not destinations:
-            await interaction.response.send_message("I've been configured not to send this anywhere.", ephemeral=True)
-            return
+        description = _("Owner of {}").format(bot.user)
+        content = _("You can reply to this message with {}contact").format(await bot.get_valid_prefixes()[0])
 
-        embed = discord.Embed(color=await bot.get_embed_color(interaction.channel), description=message)
-        embed.set_author(name=f"Owner/Staff of {bot.user.display_name}", icon_url=bot.user.display_avatar.url)
-        embed.set_footer(text="You can reply to this message with the button below or /contact.")
-        view = ContactDmView(bot.get_command("contact"), author)
+        if await bot.embed_requested(destination):
+            e = discord.Embed(colour=await bot.get_embed_color(destination), description=message)
+            e.set_footer(text=content)
+            e.set_author(name=description, icon_url=bot.user.display_avatar)
+            view = ContactDmView(bot.get_command("contact"), author)
 
-        successful = []
-
-        for destination in destinations:
             try:
-                await destination.send(embed=embed, view=view)
+                await destination.send(embed=e, view=view)
             except discord.HTTPException:
-                successful.append(False)
+                await interaction.response.send_message(
+                    _("Sorry, I couldn't deliver your message to {}").format(destination),
+                    ephemeral=True
+                )
             else:
-                successful.append(True)
-
-        if True in successful:
-            await interaction.response.send_message("Your message has been sent.", ephemeral=True)
+                await interaction.response.send_message(
+                    _("Message delivered to {}").format(destination),
+                    ephemeral=True
+                )
         else:
-            await interaction.response.send_message("Sorry, I couldn't deliver your message.", ephemeral=True)
+            response = "{}\nMessage:\n\n{}".format(description, message)
+            try:
+                await destination.send("{}\n{}".format(box(response), content))
+            except discord.HTTPException:
+                await interaction.response.send_message(
+                    _("Sorry, I couldn't deliver your message to {}").format(destination),
+                    ephemeral=True
+                )
+            else:
+                await interaction.response.send_message(
+                    _("Message delivered to {}").format(destination),
+                    ephemeral=True
+                )
 
 class ContactDmView(discord.ui.View):
     def __init__(self, command: commands.Command, destination: discord.User):
@@ -785,7 +825,6 @@ class ContactDmView(discord.ui.View):
     async def reply_button(self, interaction: discord.Interaction, button: discord.Button):
         modal = ContactDmReplyModal(self.command, self.destination)
         await interaction.response.send_modal(modal)
-
 
 class InviteView(discord.ui.View):
     def __init__(self, bot: "Red"):
