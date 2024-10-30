@@ -4760,7 +4760,7 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
         **Arguments:**
         - `<message>` - The message to dm to the user.
         """
-        destination = self.bot.get_user(user_id)
+        destination = self.bot.get_user(user)
         if destination is None or destination.bot:
             await ctx.send(
                 _(
