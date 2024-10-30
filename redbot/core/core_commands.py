@@ -512,7 +512,7 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
         embed.add_field(name=f"{shiro} About {bot_name}", value=about, inline=False)
 
         bot_install = await self.bot.get_install_url()
-        server_invite = "https://discord.com/ggQ7GcPm7P"
+        server_invite = "https://discord.gg/ggQ7GcPm7P"
         links = f"[Install {bot_name}]({bot_install})"
         if server_invite:
             links += f" | [Support Server]({server_invite})"
