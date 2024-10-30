@@ -4751,7 +4751,7 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
 
     @commands.command()
     @commands.is_owner()
-    async def dm(self, ctx: commands.Context, user: discord.User, user_id: int, *, message: str):
+    async def dm(self, ctx: commands.Context, user_id: int, *, message: str):
         """Sends a DM to a user.
 
         **Example:**
@@ -4777,7 +4777,7 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
 
         description = f"Owner/Staff of {ctx.me.name}"
         ctx.message.delete()
-        color = await ctx.bot.get_embed_color(user)
+        color = await ctx.bot.get_embed_color()
         view = ContactDmView(self.contact, ctx.author)
         if await ctx.embed_requested():
             e = discord.Embed(color=color, description=message)
