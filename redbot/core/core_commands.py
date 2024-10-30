@@ -4773,10 +4773,9 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
 
         description = f"Owner/Staff of {ctx.me.name}"
         ctx.message.delete()
-        color = await ctx.bot.get_embed_color()
         view = ContactDmView(self.contact, ctx.author)
         if await ctx.embed_requested():
-            e = discord.Embed(color=color, description=message)
+            e = discord.Embed(description=message)
 
             e.set_footer(text="You can reply to this message with the button below.")
             e.set_author(name=description, icon_url=ctx.bot.user.display_avatar)
