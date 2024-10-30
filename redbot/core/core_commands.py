@@ -4687,11 +4687,6 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
         **Arguments:**
         - `<message>` - The message to send to the owners.
         """
-        destinations = await ctx.bot.get_owner_notification_destinations()
-        if not destinations:
-            await ctx.send("I've been configured not to send this anywhere.", ephemeral=True)
-            return
-
         guild = ctx.guild
         author = ctx.author
         footer = f"User ID: {author.id}" + (f" | Server ID: {guild.id}" if guild else "")
@@ -4701,27 +4696,58 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
         successful = []
 
         view = ContactDmView(self.dm, author)
+        destinations = await ctx.bot.get_owner_notification_destinations()
+
+        if not destinations:
+            await ctx.send(_("I've been configured not to send this anywhere."))
+            return
+
+        successful = False
+
         for destination in destinations:
             is_dm = isinstance(destination, discord.User)
             if not is_dm and not destination.permissions_for(destination.guild.me).send_messages:
                 continue
 
-            color = await ctx.bot.get_embed_color(destination)
-            e = discord.Embed(color=color, description=message)
-            e.set_author(name=description, icon_url=author.display_avatar.url)
-            e.set_footer(text=f"{footer}\nYou can reply to this message with the button below.")
+            if await ctx.bot.embed_requested(destination, command=ctx.command):
+                color = await ctx.bot.get_embed_color(destination)
 
-            try:
-                await destination.send(embed=e, view=view)
-            except (discord.Forbidden, discord.HTTPException):
-                successful.append(False)
+                e = discord.Embed(colour=color, description=message)
+                e.set_author(name=description, icon_url=author.display_avatar)
+                e.set_footer(text=f"{footer}\n{content}")
+
+                try:
+                    await destination.send(embed=e, view=view)
+                except discord.Forbidden:
+                    log.exception(f"Contact failed to {destination}({destination.id})")
+                    # Should this automatically opt them out?
+                except discord.HTTPException:
+                    log.exception(
+                        f"An unexpected error happened while attempting to"
+                        f" send contact to {destination}({destination.id})"
+                    )
+                else:
+                    successful = True
             else:
-                successful.append(True)
+                msg_text = "{}\nMessage:\n\n{}\n{}".format(description, message, footer)
 
-        if True in successful:
-            await ctx.send("Your message has been sent.", ephemeral=True)
-            return
-        await ctx.send("Sorry, I'm unable to send your message.", ephemeral=True)
+                try:
+                    await destination.send("{}\n{}".format(content, box(msg_text)))
+                except discord.Forbidden:
+                    log.exception(f"Contact failed to {destination}({destination.id})")
+                    # Should this automatically opt them out?
+                except discord.HTTPException:
+                    log.exception(
+                        f"An unexpected error happened while attempting to"
+                        f" send contact to {destination}({destination.id})"
+                    )
+                else:
+                    successful = True
+
+        if successful:
+            await ctx.send(_("Your message has been sent."))
+        else:
+            await ctx.send(_("I'm unable to deliver your message. Sorry."))
 
     @commands.command()
     @commands.is_owner()
@@ -4734,6 +4760,17 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
         **Arguments:**
         - `<message>` - The message to dm to the user.
         """
+        destination = self.bot.get_user(user_id)
+        if destination is None or destination.bot:
+            await ctx.send(
+                _(
+                    "Invalid ID, user not found, or user is a bot. "
+                    "You can only send messages to people I share "
+                    "a server with."
+                )
+            )
+            return
+
         if user.bot:
             await ctx.send("I can't send messages to bots.")
             return
@@ -4746,11 +4783,23 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
         e.set_footer(text="You can reply to this message with the button below.")
         e.set_author(name=description, icon_url=ctx.author.display_avatar.url)
         try:
-            await user.send(embed=e, view=view)
+            await destination.send(embed=e)
         except discord.HTTPException:
-            await ctx.send("Sorry, I couldn't deliver your message to {}".format(user))
+            await ctx.send(
+                _("Sorry, I couldn't deliver your message to {}").format(destination)
+            )
         else:
-            await ctx.send("Your message has been sent to {}.".format(user))
+            await ctx.send(_("Message delivered to {}").format(destination))
+    else:
+        response = "{}\nMessage:\n\n{}".format(description, message)
+        try:
+            await destination.send("{}\n{}".format(box(response), content))
+        except discord.HTTPException:
+            await ctx.send(
+                _("Sorry, I couldn't deliver your message to {}").format(destination)
+        )
+        else:
+            await ctx.send(_("Message delivered to {}").format(destination))
 
     @commands.command(hidden=True)
     @commands.is_owner()
