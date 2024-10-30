@@ -4779,27 +4779,30 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
         ctx.message.delete()
         color = await ctx.bot.get_embed_color(user)
         view = ContactDmView(self.contact, ctx.author)
-        e = discord.Embed(color=color, description=message)
-        e.set_footer(text="You can reply to this message with the button below.")
-        e.set_author(name=description, icon_url=ctx.author.display_avatar.url)
-        try:
-            await destination.send(embed=e, view=view)
-        except discord.HTTPException:
-            await ctx.send(
-                _("Sorry, I couldn't deliver your message to {}").format(destination)
-            )
+        if await ctx.embed_requested():
+            e = discord.Embed(color=color, description=message)
+
+            e.set_footer(text="You can reply to this message with the button below.")
+            e.set_author(name=description, icon_url=ctx.bot.user.display_avatar)
+
+            try:
+                await destination.send(embed=e, view=view)
+            except discord.HTTPException:
+                await ctx.send(
+                    _("Sorry, I couldn't deliver your message to {}").format(destination)
+                )
+            else:
+                await ctx.send(_("Message delivered to {}").format(destination))
         else:
-            await ctx.send(_("Message delivered to {}").format(destination))
-    else:
-        response = "{}\nMessage:\n\n{}".format(description, message)
-        try:
-            await destination.send("{}\n{}".format(box(response), content))
-        except discord.HTTPException:
-            await ctx.send(
-                _("Sorry, I couldn't deliver your message to {}").format(destination)
-        )
-        else:
-            await ctx.send(_("Message delivered to {}").format(destination))
+            response = "{}\nMessage:\n\n{}".format(description, message)
+            try:
+                await destination.send("{}\n{}".format(box(response), content))
+            except discord.HTTPException:
+                await ctx.send(
+                    _("Sorry, I couldn't deliver your message to {}").format(destination)
+                )
+            else:
+                await ctx.send(_("Message delivered to {}").format(destination))
 
     @commands.command(hidden=True)
     @commands.is_owner()
