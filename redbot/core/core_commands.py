@@ -4747,40 +4747,32 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
         **Arguments:**
         - `[message]` - The message to dm to the user.
         """
-        destinations = await ctx.bot.get_owner_notification_destinations()
-        if not destinations:
-            await ctx.send(_("I've been configured not to send this anywhere."), ephemeral=True)
-            return
-
         user = self.bot.get_user(user_id)
         if user is None:
             await ctx.send(_("I couldn't find a user with that ID."), ephemeral=True)
             return
 
-        description = _("Message from {}").format(ctx.author)
-        footer = _("User ID: {}").format(ctx.author.id)
+        if user.bot:
+            await ctx.send(_("I can't send messages to bots."), ephemeral=True)
+            return
+
+        description = _("Owner of {}").format(self.bot.user.name)
+        footer = _("If you wish to reply, use the button below.")
 
         embed = discord.Embed(
             color=await ctx.embed_color(),
             description=message,
         )
-        embed.set_author(name=description, icon_url=ctx.author.display_avatar)
+        embed.set_author(name=description, icon_url=self.bot.user.display_avatar)
         embed.set_footer(text=footer)
 
-        successful = False
         view = ContactDmView(self.contact, user)
 
-        for destination in destinations:
-            try:
-                await destination.send(embed=embed, view=view)
-                successful = True
-            except discord.HTTPException:
-                continue
-
-        if successful:
-            await ctx.send(_("Your message has been sent."), ephemeral=True)
-        else:
-            await ctx.send(_("I'm unable to deliver your message. Sorry."), ephemeral=True)
+        try:
+            await user.send(embed=embed, view=view)
+            await ctx.send(_("Your message has been sent to the user."), ephemeral=True)
+        except discord.HTTPException:
+            await ctx.send(_("I couldn't send a message to that user. They may have DMs disabled or have blocked me."), ephemeral=True)
 
     @commands.command(hidden=True)
     @commands.is_owner()
