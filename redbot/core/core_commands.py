@@ -4789,7 +4789,7 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
             await ctx.send(_("I'm unable to deliver your message. Sorry."))
 
     @commands.command()
-    @commands.is_owner()
+    @commands.has_permissions(administrator=True)
     async def dm(self, ctx: commands.Context, user_id: int, *, message: str):
         """Sends a DM to a user.
 
