@@ -782,7 +782,7 @@ class InviteView(discord.ui.View):
     async def start(self, ctx: commands.Context, content: str = None, **kwargs):
         self.ctx = ctx
         bot_install = await self.bot.get_install_url()
-        server_invite = await self.bot.get_support_server_url()
+        server_invite = "https://discord.gg/ggQ7GcPm7P"
         self.add_item(
             discord.ui.Button(
                 style=discord.ButtonStyle.link,
