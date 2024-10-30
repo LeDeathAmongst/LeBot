@@ -4751,7 +4751,7 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
 
     @commands.command()
     @commands.is_owner()
-    async def dm(self, ctx: commands.Context, user: discord.User, *, message: str):
+    async def dm(self, ctx: commands.Context, user: discord.User, user_id: int, *, message: str):
         """Sends a DM to a user.
 
         **Example:**
@@ -4760,7 +4760,7 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
         **Arguments:**
         - `<message>` - The message to dm to the user.
         """
-        destination = self.bot.get_user(user)
+        destination = self.bot.get_user(user_id)
         if destination is None or destination.bot:
             await ctx.send(
                 _(
