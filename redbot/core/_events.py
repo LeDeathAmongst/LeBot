@@ -476,7 +476,7 @@ def init_events(bot, cli_flags):
                     )
                 )
                 view = discord.ui.View()
-                server_invite = await bot.get_support_server_url()
+                server_invite = "https://discord.gg/ggQ7GcPm7P"
                 if server_invite:
                     view.add_item(
                         discord.ui.Button(
