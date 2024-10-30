@@ -502,7 +502,7 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
 
         contributors = bot_repo + "/CHANGES.rst"
         rosie = "https://github.com/LeDeathAmongst"
-        fb_server = "https://discord.gg/HXdan6NnfJ"
+        fb_server = "https://discord.gg/ggQ7GcPm7P"
         about = (
             f"{bot_name} is the public, [open-source bot]({bot_repo}) "
             f"created by [Star]({rosie}) and [improved by many]({contributors}).\n\n"
