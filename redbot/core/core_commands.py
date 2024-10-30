@@ -4739,7 +4739,7 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
             return
 
         description = f"Owner/Staff of {ctx.me.name}"
-        ctx.message.delete()
+        await ctx.message.delete()
         color = await ctx.bot.get_embed_color(user)
         view = ContactDmView(self.contact, ctx.author)
         e = discord.Embed(color=color, description=message)
