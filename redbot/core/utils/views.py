@@ -708,73 +708,72 @@ class ContactDmReplyModal(discord.ui.Modal):
         elif self.command == bot.get_command("dm"):
             await self.dm(interaction, message)
 
-async def contact(self, interaction: discord.Interaction, message: str):
-    author = interaction.user
-    bot: "Red" = interaction.client
+    async def contact(self, interaction: discord.Interaction, message: str):
+        author = interaction.user
+        bot: "Red" = interaction.client
 
-    destinations = await bot.get_owner_notification_destinations()
-    if not destinations:
-        await interaction.response.send_message("I've been configured not to send this anywhere.", ephemeral=True)
-        return
+        destinations = await bot.get_owner_notification_destinations()
+        if not destinations:
+            await interaction.response.send_message("I've been configured not to send this anywhere.", ephemeral=True)
+            return
 
-    guild = interaction.guild
-    footer = f"User ID: {author.id}" + (f" | Server ID: {guild.id}" if guild else "")
-    source = f"from {guild.name}" if guild else "through DM"
-    description = f"Sent by {author} {source}"
+        guild = interaction.guild
+        footer = f"User ID: {author.id}" + (f" | Server ID: {guild.id}" if guild else "")
+        source = f"from {guild.name}" if guild else "through DM"
+        description = f"Sent by {author} {source}"
 
-    successful = []
-    view = ContactDmView(bot.get_command("dm"), author)
+        successful = []
+        view = ContactDmView(bot.get_command("dm"), author)
 
-    for destination in destinations:
-        is_dm = isinstance(destination, discord.User)
-        if not is_dm and not destination.permissions_for(destination.guild.me).send_messages:
-            continue
+        for destination in destinations:
+            is_dm = isinstance(destination, discord.User)
+            if not is_dm and not destination.permissions_for(destination.guild.me).send_messages:
+                continue
 
-        embed = discord.Embed(color=await bot.get_embed_color(destination), description=message)
-        embed.set_author(name=description, icon_url=author.display_avatar.url)
-        embed.set_footer(text=f"{footer}\nYou can reply to this message with the button below or /dm.")
+            embed = discord.Embed(color=await bot.get_embed_color(destination), description=message)
+            embed.set_author(name=description, icon_url=author.display_avatar.url)
+            embed.set_footer(text=f"{footer}\nYou can reply to this message with the button below or /dm.")
 
-        try:
-            await destination.send(embed=embed, view=view)
-        except (discord.Forbidden, discord.HTTPException):
-            successful.append(False)
+            try:
+                await destination.send(embed=embed, view=view)
+            except (discord.Forbidden, discord.HTTPException):
+                successful.append(False)
+            else:
+                successful.append(True)
+
+        if True in successful:
+            await interaction.response.send_message("Your message has been sent.", ephemeral=True)
         else:
-            successful.append(True)
+            await interaction.response.send_message("Sorry, I'm unable to send your message.", ephemeral=True)
 
-    if True in successful:
-        await interaction.response.send_message("Your message has been sent.", ephemeral=True)
-    else:
-        await interaction.response.send_message("Sorry, I'm unable to send your message.", ephemeral=True)
+    async def dm(self, interaction: discord.Interaction, message: str):
+        author = interaction.user
+        bot: "Red" = interaction.client
 
-async def dm(self, interaction: discord.Interaction, message: str):
-    author = interaction.user
-    bot: "Red" = interaction.client
+        destinations = await bot.get_owner_notification_destinations()
+        if not destinations:
+            await interaction.response.send_message("I've been configured not to send this anywhere.", ephemeral=True)
+            return
 
-    destinations = await bot.get_owner_notification_destinations()
-    if not destinations:
-        await interaction.response.send_message("I've been configured not to send this anywhere.", ephemeral=True)
-        return
+        embed = discord.Embed(color=await bot.get_embed_color(interaction.channel), description=message)
+        embed.set_author(name=f"Owner/Staff of {bot.user.display_name}", icon_url=bot.user.display_avatar.url)
+        embed.set_footer(text="You can reply to this message with the button below or /contact.")
+        view = ContactDmView(bot.get_command("contact"), author)
 
-    embed = discord.Embed(color=await bot.get_embed_color(interaction.channel), description=message)
-    embed.set_author(name=f"Owner/Staff of {bot.user.display_name}", icon_url=bot.user.display_avatar.url)
-    embed.set_footer(text="You can reply to this message with the button below or /contact.")
-    view = ContactDmView(bot.get_command("contact"), author)
+        successful = []
 
-    successful = []
+        for destination in destinations:
+            try:
+                await destination.send(embed=embed, view=view)
+            except discord.HTTPException:
+                successful.append(False)
+            else:
+                successful.append(True)
 
-    for destination in destinations:
-        try:
-            await destination.send(embed=embed, view=view)
-        except discord.HTTPException:
-            successful.append(False)
+        if True in successful:
+            await interaction.response.send_message("Your message has been sent.", ephemeral=True)
         else:
-            successful.append(True)
-
-    if True in successful:
-        await interaction.response.send_message("Your message has been sent.", ephemeral=True)
-    else:
-        await interaction.response.send_message("Sorry, I couldn't deliver your message.", ephemeral=True)
-
+            await interaction.response.send_message("Sorry, I couldn't deliver your message.", ephemeral=True)
 
 class ContactDmView(discord.ui.View):
     def __init__(self, command: commands.Command, destination: discord.User):
