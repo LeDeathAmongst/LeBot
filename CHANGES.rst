@@ -1,3 +1,3 @@
 .. Starfire Changes
 
-Started Development
+Started Development of Starfire
