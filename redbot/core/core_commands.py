@@ -4744,7 +4744,7 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
         view = ContactDmView(self.contact, ctx.author)
         e = discord.Embed(color=color, description=message)
         e.set_footer(text="You can reply to this message with the button below.")
-        e.set_author(name=description, icon_url=ctx.author.display_avatar.url)
+        e.set_author(name=description, icon_url=bot.user.display_avatar.url)
         try:
             await user.send(embed=e, view=view)
         except discord.HTTPException:
