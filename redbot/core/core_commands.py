@@ -536,7 +536,7 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
         org = "https://github.com/LeDeathAmongst"
         fb_repo = org + "/LeBot"
         rosie = org
-        fb_server = "https://discord.com/ggQ7GcPm7P"
+        fb_server = "https://discord.gg/ggQ7GcPm7P"
         kuro = self.bot.get_user(1269563963994280038)
         lamune = self.bot.get_user(1130886272550981662)
         dot = discord.PartialEmoji(name="dot", animated=False, id=1279795628335042600)
@@ -571,33 +571,7 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
             ),
             inline=False,
         )
-        embeds.append(embed)
-
-        if repo_cog := self.bot.get_cog("Downloader"):
-            repos = {c.repo_name for c in await repo_cog.installed_cogs()}
-            command = f"*Use `{ctx.clean_prefix}findcog <command>` to find the author of the cog of a certain command.*\n"
-            cogs_credits = "\n" + "\n".join(
-                sorted(
-                    (
-                        f"**[{repo.url.split('/')[4]}]({repo.url})**: {', '.join(repo.author) or repo.url.split('/')[3]}"
-                        for repo in repo_cog._repo_manager.repos
-                        if repo.url.startswith("http") and repo.name in repos
-                    ),
-                    key=lambda k: k.title(),
-                )
-            )
-            for credit in pagify(cogs_credits, page_length=1024 - len(command)):
-                # Embed.copy() or copy.copy() will make all embeds link (edit one and all embeds will be edited)
-                # To prevent it, we should use deepcopy.
-                repos_embed = copy.deepcopy(embed)
-                repos_embed.clear_fields()
-                repos_embed.add_field(
-                    name="<:Cog:925401264395796481> Cogs & Their Creators",
-                    value=command + credit,
-                    inline=False,
-                )
-                embeds.append(repos_embed)
-        await menu(ctx, embeds)
+        await ctx.send(embed=embed)
 
     @commands.hybrid_command()
     async def uptime(self, ctx: commands.Context):
