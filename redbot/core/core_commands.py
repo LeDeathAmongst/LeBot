@@ -512,7 +512,7 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
         embed.add_field(name=f"{shiro} About {bot_name}", value=about, inline=False)
 
         bot_install = await self.bot.get_install_url()
-        server_invite = await self.bot.get_support_server_url()
+        server_invite = "https://discord.com/ggQ7GcPm7P"
         links = f"[Install {bot_name}]({bot_install})"
         if server_invite:
             links += f" | [Support Server]({server_invite})"
@@ -536,7 +536,7 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
         org = "https://github.com/LeDeathAmongst"
         fb_repo = org + "/LeBot"
         rosie = org
-        fb_server = "https://discord.gg/HXdan6NnfJ"
+        fb_server = "https://discord.com/ggQ7GcPm7P"
         kuro = self.bot.get_user(1269563963994280038)
         lamune = self.bot.get_user(1130886272550981662)
         dot = discord.PartialEmoji(name="dot", animated=False, id=1279795628335042600)
@@ -614,11 +614,7 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
 
     @commands.group(cls=commands.commands._AlwaysAvailableGroup)
     async def mydata(self, ctx: commands.Context):
-        """
-        Commands which interact with the data [botname] has about you.
-
-        More information can be found in the [End User Data Documentation.](https://docs.discord.red/en/stable/red_core_data_statement.html)
-        """
+        """Commands which interact with the data [botname] has about you."""
 
     # 1/10 minutes. It's a static response, but the inability to lock
     # will annoy people if it's spammable
@@ -6009,7 +6005,7 @@ class Core(commands.commands._RuleDropper, commands.Cog, CoreLogic):
     async def on_message_without_command(self, message: discord.Message):
         if message.author.bot or message.content != self.bot.user.mention:
             return
-        support = await self.bot.get_support_server_url()
+        support = "https://discord.com/ggQ7GcPm7P"
         prefixes = await self.bot.get_prefix(message.channel)
         embed = discord.Embed(
             color=await self.bot.get_embed_color(message.channel),
